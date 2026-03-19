@@ -1,0 +1,2799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>预约管理 - 方格跳动</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        /* 模拟手机屏幕 */
+        .mobile-frame {
+            max-width: 414px;
+            margin: 0 auto;
+            background: #f5f5f5;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* 顶部导航 - ui-ux-pro-max 规范 */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            padding: 16px;
+            padding-top: 44px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            text-align: center;
+        }
+        
+        /* Tab 切换栏 */
+        .tab-header {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 88px;
+            z-index: 99;
+        }
+        .tab-header-item {
+            flex: 1;
+            padding: 14px 0;
+            text-align: center;
+            font-size: 15px;
+            color: #6b7280;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tab-header-item.active {
+            color: #1e3a5f;
+            font-weight: 600;
+        }
+        .tab-header-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, #1e3a5f, #3b82f6);
+            border-radius: 2px;
+        }
+        
+        /* 筛选栏 */
+        .filter-bar {
+            background: #fff;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-row-primary {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+        }
+        .filter-row-secondary {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            width: 100%;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .filter-row-secondary.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin-top: -12px;
+        }
+        .filter-input {
+            flex: 1;
+            min-width: 120px;
+            height: 40px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: #1f2937;
+        }
+        .filter-input::placeholder {
+            color: #9ca3af;
+        }
+        .filter-picker {
+            flex: 1;
+            min-width: 100px;
+            height: 40px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .filter-picker span:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .filter-picker .arrow {
+            font-size: 12px;
+            color: #9ca3af;
+            flex-shrink: 0;
+            margin-left: 4px;
+        }
+        .search-btn {
+            width: 80px;
+            height: 40px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .search-btn:active {
+            opacity: 0.9;
+            transform: scale(0.98);
+        }
+        
+        /* 筛选展开/折叠按钮 */
+        .filter-toggle-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 0 12px;
+            height: 40px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #6b7280;
+            cursor: pointer;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .filter-toggle-btn:active {
+            background: #e5e7eb;
+        }
+        .filter-toggle-btn .toggle-icon {
+            font-size: 10px;
+            transition: transform 0.3s ease;
+        }
+        .filter-toggle-btn.expanded .toggle-icon {
+            transform: rotate(180deg);
+        }
+        
+        /* 响应式适配 */
+        @media screen and (max-width: 375px) {
+            .filter-row-secondary {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-row-secondary .filter-picker {
+                width: 100%;
+            }
+            .filter-toggle-btn {
+                display: flex;
+            }
+        }
+        
+        @media screen and (max-width: 320px) {
+            .filter-bar {
+                padding: 10px 12px;
+            }
+            .filter-row {
+                gap: 8px;
+            }
+            .filter-input {
+                min-width: 100px;
+                font-size: 13px;
+            }
+            .filter-picker {
+                min-width: 80px;
+                font-size: 13px;
+                padding: 0 10px;
+            }
+            .search-btn {
+                width: 64px;
+                font-size: 13px;
+            }
+        }
+        
+        /* 列表区域 */
+        .list-container {
+            padding: 12px 16px 100px;
+        }
+        
+        /* 预约卡片 */
+        .booking-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+        }
+        .booking-card:active {
+            transform: scale(0.99);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        /* 卡片头部 */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .booking-id-section {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .booking-id-label {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .booking-id {
+            font-size: 14px;
+            color: #3b82f6;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .booking-id:active {
+            opacity: 0.7;
+        }
+        .copy-icon {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .order-id {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .order-id:active {
+            opacity: 0.7;
+        }
+        
+        /* 教练预约卡片中的订单号样式 */
+        .booking-id-section .order-no {
+            font-size: 12px;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+        .booking-id-section .order-no:active {
+            opacity: 0.7;
+        }
+        
+        /* 自定义日期选择区域 */
+        .custom-date-section {
+            padding: 16px 20px;
+            border-top: 1px solid #f3f4f6;
+        }
+        .custom-date-label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+        .custom-date-picker {
+            display: flex;
+            align-items: center;
+        }
+        .date-input {
+            flex: 1;
+            height: 40px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: #1f2937;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .date-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-normal {
+            background: #d1fae5;
+            color: #059669;
+        }
+        .status-unpaid {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .status-cancelled {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .status-refunded {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+        .status-completed {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        /* 卡片内容 */
+        .card-body {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .info-value {
+            font-size: 14px;
+            color: #1f2937;
+            font-weight: 500;
+        }
+        .info-value.phone {
+            color: #3b82f6;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .info-value.phone:active {
+            opacity: 0.7;
+        }
+        .info-value.highlight {
+            color: #1e3a5f;
+            font-weight: 600;
+        }
+        
+        /* 时间信息 */
+        .time-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .time-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .time-label {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        .time-value {
+            font-size: 13px;
+            color: #1f2937;
+            font-weight: 500;
+        }
+        .time-divider {
+            font-size: 14px;
+            color: #d1d5db;
+        }
+        
+        /* 实际时间样式 - 已完成订单 */
+        .time-section.actual-time {
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 1px solid #6ee7b7;
+        }
+        .time-section.actual-time .time-label {
+            color: #059669;
+            font-weight: 500;
+        }
+        .time-section.actual-time .time-value.actual {
+            color: #047857;
+            font-weight: 600;
+        }
+        
+        /* 卡片底部 */
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+        }
+        .create-time {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .price-section {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .price-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .price-value {
+            font-size: 18px;
+            color: #1e3a5f;
+            font-weight: 700;
+        }
+        .price-unit {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* 底部导航 - ui-ux-pro-max 规范 */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+        .tab-bar-left, .tab-bar-right {
+            display: flex;
+            flex: 1;
+            justify-content: space-around;
+            min-width: 0; /* 防止flex子项溢出 */
+        }
+        
+        /* 确保所有Tab项都可见 */
+        .tab-bar .tab-item {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-item:active {
+            transform: scale(0.95);
+            background: rgba(59, 130, 246, 0.08);
+        }
+        .tab-item.active {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .tab-item.active .tab-icon, .tab-item.active .tab-label {
+            color: #1e3a5f;
+            font-weight: 600;
+        }
+        .tab-icon {
+            font-size: 20px;
+            margin-bottom: 3px;
+            color: #94a3b8;
+            transition: all 0.3s ease;
+        }
+        .tab-label {
+            font-size: 10px;
+            color: #94a3b8;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .tab-item-center {
+            position: relative;
+            padding: 0;
+            margin: 0 8px;
+        }
+        .tab-item-center .center-icon-wrapper {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(30, 58, 95, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2);
+            margin-bottom: 4px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid #fff;
+        }
+        .tab-item-center:active .center-icon-wrapper {
+            transform: scale(0.92);
+            box-shadow: 0 2px 10px rgba(30, 58, 95, 0.25);
+        }
+        .tab-item-center .tab-icon {
+            font-size: 24px;
+            color: #ffffff;
+            margin-bottom: 0;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+        }
+        .tab-item-center .tab-label {
+            font-size: 11px;
+            color: #1e3a5f;
+            font-weight: 600;
+        }
+        
+        /* 筛选弹窗 */
+        .picker-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .picker-modal.active {
+            display: flex;
+        }
+        .picker-content {
+            background: #fff;
+            width: 100%;
+            max-width: 414px;
+            border-radius: 20px 20px 0 0;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        .picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .picker-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .picker-close {
+            font-size: 20px;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        .picker-list {
+            padding: 8px 0;
+        }
+        .picker-item {
+            padding: 14px 20px;
+            font-size: 15px;
+            color: #1f2937;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .picker-item:active {
+            background: #f3f4f6;
+        }
+        .picker-item.active {
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        .picker-check {
+            font-size: 18px;
+            color: #3b82f6;
+        }
+        
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.75);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 2000;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+        }
+        .empty-state.show {
+            display: flex;
+        }
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+        .empty-text {
+            font-size: 15px;
+            color: #9ca3af;
+        }
+        
+        /* 卡片操作区域 */
+        .card-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid #f3f4f6;
+            margin-top: 12px;
+        }
+        
+        /* 操作按钮 - ui-ux-pro-max 规范 */
+        .action-btn {
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .action-btn.primary {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-color: transparent;
+            color: #fff;
+        }
+        .action-btn.primary:active {
+            opacity: 0.9;
+            transform: scale(0.95);
+        }
+        .action-btn.success {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            border-color: transparent;
+            color: #fff;
+        }
+        .action-btn.success:active {
+            opacity: 0.9;
+            transform: scale(0.95);
+        }
+        .action-btn:active {
+            opacity: 0.8;
+            transform: scale(0.95);
+        }
+        
+        /* 教练预约卡片样式 */
+        .coach-booking-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        
+        .coach-info-section {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .coach-info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        
+        .coach-info-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .coach-info-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .lesson-type-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 500;
+            background: #dbeafe;
+            color: #1e40af;
+            width: fit-content;
+        }
+        
+        .coach-price-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .price-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .price-row .price-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        .price-row .price-value {
+            font-size: 16px;
+            color: #1e3a5f;
+            font-weight: 700;
+        }
+        
+        .price-row .price-value.actual-pay {
+            color: #059669;
+        }
+        
+        .coach-footer {
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        
+        .coach-footer .order-no {
+            font-size: 12px;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .coach-footer .order-no:active {
+            opacity: 0.7;
+        }
+        
+        /* 教练预约弹窗内容 - 小程序优化 */
+        .coach-modal-content {
+            padding: 12px 16px;
+            max-height: 60vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* 信息展示区域 - 紧凑版 */
+        .coach-info-display {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .coach-info-display.readonly {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .info-row-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        
+        .info-row-display:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label-display {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .info-value-display {
+            font-size: 13px;
+            color: #1e293b;
+            font-weight: 500;
+            max-width: 60%;
+            text-align: right;
+            word-break: break-all;
+        }
+        
+        .info-value-display.readonly-value {
+            color: #64748b;
+        }
+        
+        /* 备注输入区域 - 紧凑版 */
+        .remark-input-section {
+            margin-top: 12px;
+        }
+        
+        .input-label {
+            display: block;
+            font-size: 12px;
+            color: #374151;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        
+        .input-label.required::before {
+            content: '* ';
+            color: #ef4444;
+        }
+        
+        .remark-textarea {
+            width: 100%;
+            min-height: 70px;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #1f2937;
+            resize: vertical;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        
+        .remark-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        /* 修改区域 - 紧凑版 */
+        .coach-modify-section {
+            margin-top: 12px;
+        }
+        
+        .modify-row {
+            margin-bottom: 12px;
+        }
+        
+        .modify-row.two-col {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modify-row.two-col .modify-item {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .modify-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modify-input {
+            height: 40px;
+            padding: 0 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #1f2937;
+            background: #fff;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .modify-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        /* 金额输入 - 紧凑版 */
+        .amount-input-wrapper {
+            display: flex;
+            align-items: center;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .amount-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: #f3f4f6;
+            font-size: 16px;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .amount-btn:active {
+            background: #e5e7eb;
+        }
+        
+        .amount-btn.minus {
+            border-right: 1px solid #e5e7eb;
+        }
+        
+        .amount-btn.plus {
+            border-left: 1px solid #e5e7eb;
+        }
+        
+        .amount-input {
+            flex: 1;
+            height: 40px;
+            border: none;
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e3a5f;
+            min-width: 0;
+        }
+        
+        .amount-input:focus {
+            outline: none;
+        }
+        
+        /* 切换按钮 - ui-ux-pro-max 规范 */
+        .switch-btn {
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .switch-btn:active {
+            background: #3b82f6;
+            color: #fff;
+            transform: scale(0.95);
+        }
+        
+        /* 底部弹窗 - 适配小程序 */
+        .bottom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .bottom-modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #fff;
+            width: 100%;
+            max-width: 100%;
+            border-radius: 20px 20px 0 0;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 确保弹窗内容区域可滚动 */
+        .modal-content > .coach-modal-content,
+        .modal-content > .change-court-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .modal-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .modal-close {
+            font-size: 20px;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        
+        /* 修改场地内容 */
+        .change-court-content {
+            padding: 16px;
+        }
+        
+        /* 门店信息栏 */
+        .store-info-bar {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .store-label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-right: 8px;
+        }
+        .store-name {
+            font-size: 14px;
+            color: #1f2937;
+            font-weight: 500;
+            flex: 1;
+        }
+        .store-tag {
+            font-size: 11px;
+            color: #9ca3af;
+            background: #e5e7eb;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        /* 筛选栏 */
+        .court-filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .filter-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-label {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .picker-box {
+            height: 36px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        .picker-box.small {
+            height: 32px;
+            padding: 0 8px;
+        }
+        .picker-box.small .picker-text {
+            font-size: 12px;
+        }
+        .picker-text {
+            font-size: 13px;
+            color: #1f2937;
+        }
+        .picker-arrow {
+            font-size: 10px;
+            color: #9ca3af;
+        }
+        
+        /* picker 弹窗层级最高 */
+        #pickerModal {
+            z-index: 1003;
+        }
+        
+        /* 提示信息 */
+        .court-tips {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 12px;
+            background: #eff6ff;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .tip-icon {
+            font-size: 14px;
+        }
+        .tip-text {
+            font-size: 12px;
+            color: #3b82f6;
+            line-height: 1.5;
+        }
+        
+        /* 场次列表 */
+        .court-session-list {
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #f3f4f6;
+            margin-bottom: 16px;
+        }
+        .session-header {
+            display: flex;
+            padding: 12px 8px;
+            background: #f9fafb;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .session-body {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .session-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 8px;
+            font-size: 13px;
+            color: #4b5563;
+            cursor: pointer;
+        }
+        .session-item:active {
+            background: #f9fafb;
+        }
+        .session-item.selected {
+            background: #eff6ff;
+        }
+        .session-item + .session-item {
+            border-top: 1px solid #f3f4f6;
+        }
+        .session-col {
+            text-align: center;
+        }
+        .session-col.check {
+            width: 40px;
+        }
+        .session-col.date {
+            flex: 1.2;
+        }
+        .session-col.time {
+            flex: 1;
+        }
+        .session-col.price {
+            flex: 0.8;
+        }
+        .session-col.status {
+            flex: 0.8;
+        }
+        .checkbox {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #fff;
+        }
+        .checkbox.checked {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .session-col.status.available {
+            color: #10b981;
+        }
+        .session-col.status.occupied {
+            color: #9ca3af;
+        }
+        
+        /* 已选场次 */
+        .selected-session-bar {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: #eff6ff;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .selected-session-bar .selected-label {
+            font-size: 13px;
+            color: #6b7280;
+            margin-right: 8px;
+        }
+        .selected-session-bar .selected-info {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .selected-session-bar .court-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .selected-session-bar .session-time {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .selected-session-bar .session-price {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ef4444;
+        }
+        
+        /* 弹窗底部按钮 - 小程序优化 */
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+            border-top: 1px solid #f3f4f6;
+            background: #fff;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .modal-footer .cancel-btn,
+        .modal-footer .confirm-btn {
+            flex: 1;
+            height: 44px;
+            line-height: 44px;
+            font-size: 15px;
+            border-radius: 22px;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            text-align: center;
+            display: block;
+            white-space: nowrap;
+        }
+        .modal-footer .cancel-btn {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .modal-footer .confirm-btn {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            color: #fff;
+            font-weight: 600;
+        }
+        .modal-footer .cancel-btn:active,
+        .modal-footer .confirm-btn:active {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-frame">
+        <!-- 顶部导航 -->
+        <div class="header">
+            <div class="header-title">预约管理</div>
+        </div>
+        
+        <!-- Tab 切换栏 -->
+        <div class="tab-header">
+            <div class="tab-header-item active" data-tab="court" onclick="switchTab('court')">场地预约</div>
+            <div class="tab-header-item" data-tab="coach" onclick="switchTab('coach')">教练预约</div>
+        </div>
+        
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+            <!-- 主要查询区域：始终可见 -->
+            <div class="filter-row-primary">
+                <input type="text" class="filter-input" id="phoneInput" placeholder="请输入手机号">
+                <button class="search-btn" onclick="searchBookings()">查询</button>
+                <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilterRow()">
+                    <span>筛选</span>
+                    <span class="toggle-icon">▼</span>
+                </button>
+            </div>
+            <!-- 次要筛选区域：可折叠 -->
+            <div class="filter-row-secondary" id="filterRowSecondary">
+                <div class="filter-row">
+                    <div class="filter-picker" onclick="showStatusPicker()">
+                        <span id="statusText">全部状态</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="filter-picker" onclick="showDatePicker()">
+                        <span id="dateText">全部日期</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                </div>
+                <!-- 场地预约专属：赛道筛选 -->
+                <div class="filter-row" id="courtFilterRow">
+                    <div class="filter-picker" onclick="showCourtPicker()">
+                        <span id="courtText">全部赛道</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 列表区域 -->
+        <div class="list-container" id="listContainer">
+            <!-- 场地预约列表 -->
+            <div id="courtList">
+                <!-- 动态生成 -->
+            </div>
+            
+            <!-- 教练预约列表 -->
+            <div id="coachList" style="display: none;">
+                <!-- 动态生成 -->
+            </div>
+            
+            <!-- 空状态 -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">暂无预约记录</div>
+            </div>
+        </div>
+        
+        <!-- 底部导航 - ui-ux-pro-max 规范 (5个Tab：订单、预约、首页、优惠券、我的) -->
+        <div class="tab-bar">
+            <!-- 左侧：订单、预约 -->
+            <div class="tab-bar-left">
+                <div class="tab-item" data-page="order">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-label">订单</span>
+                </div>
+                <div class="tab-item" data-page="court">
+                    <span class="tab-icon">🏟️</span>
+                    <span class="tab-label">场地</span>
+                </div>
+            </div>
+            
+            <!-- 中间：首页（突出显示） -->
+            <div class="tab-item tab-item-center" data-page="home">
+                <div class="center-icon-wrapper">
+                    <span class="tab-icon">🏠</span>
+                </div>
+                <span class="tab-label">首页</span>
+            </div>
+            
+            <!-- 右侧：优惠券、我的 -->
+            <div class="tab-bar-right">
+                <a href="coupon-preview.html" class="tab-item" data-page="coupon">
+                    <span class="tab-icon">🎫</span>
+                    <span class="tab-label">优惠券</span>
+                </a>
+                <a href="profile-preview.html" class="tab-item" data-page="profile">
+                    <span class="tab-icon">👤</span>
+                    <span class="tab-label">我的</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 状态筛选弹窗 -->
+    <div class="picker-modal" id="statusPicker" onclick="closeStatusPicker(event)">
+        <div class="picker-content" onclick="event.stopPropagation()">
+            <div class="picker-header">
+                <span class="picker-title">选择状态</span>
+                <span class="picker-close" onclick="closeStatusPicker()">✕</span>
+            </div>
+            <div class="picker-list">
+                <div class="picker-item active" data-value="" onclick="selectStatus('', '全部状态')">
+                    <span>全部状态</span>
+                </div>
+                <div class="picker-item" data-value="0" onclick="selectStatus('0', '未付款')">
+                    <span>未付款</span>
+                </div>
+                <div class="picker-item" data-value="1" onclick="selectStatus('1', '正常')">
+                    <span>正常</span>
+                </div>
+                <div class="picker-item" data-value="2" onclick="selectStatus('2', '已取消')">
+                    <span>已取消</span>
+                </div>
+                <div class="picker-item" data-value="3" onclick="selectStatus('3', '已退款')">
+                    <span>已退款</span>
+                </div>
+                <div class="picker-item" data-value="4" onclick="selectStatus('4', '已完成')">
+                    <span>已完成</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 日期筛选弹窗 -->
+    <div class="picker-modal" id="datePicker" onclick="closeDatePicker(event)">
+        <div class="picker-content" onclick="event.stopPropagation()">
+            <div class="picker-header">
+                <span class="picker-title">选择预约日期</span>
+                <span class="picker-close" onclick="closeDatePicker()">✕</span>
+            </div>
+            <div class="picker-list">
+                <div class="picker-item active" data-value="" onclick="selectDate('', '全部日期')">
+                    <span>全部日期</span>
+                </div>
+                <div class="picker-item" data-value="today" onclick="selectDate('today', '今天')">
+                    <span>今天</span>
+                </div>
+                <div class="picker-item" data-value="tomorrow" onclick="selectDate('tomorrow', '明天')">
+                    <span>明天</span>
+                </div>
+                <div class="picker-item" data-value="week" onclick="selectDate('week', '最近7天')">
+                    <span>最近7天</span>
+                </div>
+                <div class="picker-item" data-value="month" onclick="selectDate('month', '最近30天')">
+                    <span>最近30天</span>
+                </div>
+            </div>
+            <!-- 自定义日期选择 -->
+            <div class="custom-date-section">
+                <div class="custom-date-label">选择指定日期</div>
+                <div class="custom-date-picker">
+                    <input type="date" id="customDateInput" class="date-input" onchange="selectCustomDate(this.value)">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 赛道筛选弹窗 -->
+    <div class="picker-modal" id="courtPicker" onclick="closeCourtPicker(event)">
+        <div class="picker-content" onclick="event.stopPropagation()">
+            <div class="picker-header">
+                <span class="picker-title">选择赛道</span>
+                <span class="picker-close" onclick="closeCourtPicker()">✕</span>
+            </div>
+            <div class="picker-list">
+                <div class="picker-item active" data-value="" onclick="selectCourt('', '全部赛道')">
+                    <span>全部赛道</span>
+                </div>
+                <div class="picker-item" data-value="一号赛道" onclick="selectCourt('一号赛道', '一号赛道')">
+                    <span>一号赛道</span>
+                </div>
+                <div class="picker-item" data-value="二号赛道" onclick="selectCourt('二号赛道', '二号赛道')">
+                    <span>二号赛道</span>
+                </div>
+                <div class="picker-item" data-value="三号赛道" onclick="selectCourt('三号赛道', '三号赛道')">
+                    <span>三号赛道</span>
+                </div>
+                <div class="picker-item" data-value="四号赛道" onclick="selectCourt('四号赛道', '四号赛道')">
+                    <span>四号赛道</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+    
+    <!-- picker 弹窗（通用选择器） -->
+    <div class="picker-modal" id="pickerModal" onclick="closePickerModal(event)">
+        <div class="picker-content" onclick="event.stopPropagation()">
+            <div class="picker-header">
+                <span class="picker-title" id="pickerModalTitle">选择</span>
+                <span class="picker-close" onclick="closePickerModal()">✕</span>
+            </div>
+            <div class="picker-list" id="pickerModalList">
+                <!-- 动态生成选项 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 修改场地弹窗 -->
+    <div class="bottom-modal" id="changeCourtModal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <span class="modal-title">修改场地</span>
+                <span class="modal-close" onclick="closeChangeCourtModal()">✕</span>
+            </div>
+            <div class="change-court-content">
+                <!-- 固定门店信息 -->
+                <div class="store-info-bar">
+                    <span class="store-label">门店</span>
+                    <span class="store-name" id="changeCourtStore">上海浦东网球中心</span>
+                    <span class="store-tag">不可修改</span>
+                </div>
+                
+                <!-- 筛选栏 - 小程序风格 picker -->
+                <div class="court-filter-bar">
+                    <div class="filter-item">
+                        <span class="filter-label">日期</span>
+                        <div class="picker-box small" onclick="showChangeCourtDatePicker()">
+                            <span class="picker-text" id="changeCourtDate">2026-03-11</span>
+                            <span class="picker-arrow">▼</span>
+                        </div>
+                    </div>
+                    <div class="filter-item">
+                        <span class="filter-label">场地</span>
+                        <div class="picker-box small" onclick="showChangeCourtPicker()">
+                            <span class="picker-text" id="changeCourtName">二号赛道</span>
+                            <span class="picker-arrow">▼</span>
+                        </div>
+                    </div>
+                    <div class="filter-item">
+                        <span class="filter-label">时段</span>
+                        <div class="picker-box small" onclick="showChangeCourtTimePicker()">
+                            <span class="picker-text" id="changeCourtTime">00:30-01:00</span>
+                            <span class="picker-arrow">▼</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 提示信息 -->
+                <div class="court-tips">
+                    <span class="tip-icon">ℹ️</span>
+                    <span class="tip-text">仅可选择状态为"可预约"的场地，且每次只能选择一个场次</span>
+                </div>
+                
+                <!-- 场次列表 -->
+                <div class="court-session-list">
+                    <div class="session-header">
+                        <span class="session-col check"></span>
+                        <span class="session-col date">日期</span>
+                        <span class="session-col time">时段</span>
+                        <span class="session-col price">价格</span>
+                        <span class="session-col status">状态</span>
+                    </div>
+                    <div class="session-body" id="sessionList">
+                        <div class="session-item selected" data-session="1" onclick="selectSession(this)">
+                            <span class="session-col check">
+                                <span class="checkbox checked">✓</span>
+                            </span>
+                            <span class="session-col date">2026-03-11</span>
+                            <span class="session-col time">00:30-00:59</span>
+                            <span class="session-col price">¥19.90</span>
+                            <span class="session-col status available">可预约</span>
+                        </div>
+                        <div class="session-item" data-session="2" onclick="selectSession(this)">
+                            <span class="session-col check">
+                                <span class="checkbox"></span>
+                            </span>
+                            <span class="session-col date">2026-03-11</span>
+                            <span class="session-col time">01:00-01:29</span>
+                            <span class="session-col price">¥19.90</span>
+                            <span class="session-col status occupied">已占用</span>
+                        </div>
+                        <div class="session-item" data-session="3" onclick="selectSession(this)">
+                            <span class="session-col check">
+                                <span class="checkbox"></span>
+                            </span>
+                            <span class="session-col date">2026-03-11</span>
+                            <span class="session-col time">01:30-01:59</span>
+                            <span class="session-col price">¥29.90</span>
+                            <span class="session-col status available">可预约</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 已选场次 -->
+                <div class="selected-session-bar">
+                    <span class="selected-label">已选场次:</span>
+                    <span class="selected-info" id="selectedSessionInfo">
+                        <span class="court-name">二号赛道</span>
+                        <span class="session-time">2026-03-11 00:30-00:59</span>
+                        <span class="session-price">¥19.90</span>
+                    </span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeChangeCourtModal()">取消</button>
+                <button class="confirm-btn" onclick="confirmChangeCourt()">确认修改</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 确认备注弹窗 -->
+    <div class="bottom-modal" id="confirmRemarkModal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <span class="modal-title">确认预约</span>
+                <span class="modal-close" onclick="closeConfirmRemarkModal()">✕</span>
+            </div>
+            <div class="coach-modal-content">
+                <!-- 预约信息展示 -->
+                <div class="coach-info-display">
+                    <div class="info-row-display">
+                        <span class="info-label-display">预约编号</span>
+                        <span class="info-value-display" id="confirmBookingId">-</span>
+                    </div>
+                    <div class="info-row-display">
+                        <span class="info-label-display">教练</span>
+                        <span class="info-value-display" id="confirmCoachName">-</span>
+                    </div>
+                    <div class="info-row-display">
+                        <span class="info-label-display">预约时间</span>
+                        <span class="info-value-display" id="confirmBookingTime">-</span>
+                    </div>
+                </div>
+                
+                <!-- 备注输入 -->
+                <div class="remark-input-section">
+                    <label class="input-label">确认备注</label>
+                    <textarea class="remark-textarea" id="confirmRemarkInput" placeholder="请输入确认备注（可选）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeConfirmRemarkModal()">取消</button>
+                <button class="confirm-btn" onclick="submitConfirmBooking()">确认</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 修改教练预约弹窗 -->
+    <div class="bottom-modal" id="modifyCoachModal">
+        <div class="modal-content">
+            <div class="modal-top">
+                <span class="modal-title">修改教练预约</span>
+                <span class="modal-close" onclick="closeModifyCoachModal()">✕</span>
+            </div>
+            <div class="coach-modal-content">
+                <!-- 只读信息 -->
+                <div class="coach-info-display readonly">
+                    <div class="info-row-display">
+                        <span class="info-label-display">用户ID</span>
+                        <span class="info-value-display readonly-value" id="modifyUserId">-</span>
+                    </div>
+                    <div class="info-row-display">
+                        <span class="info-label-display">教练</span>
+                        <span class="info-value-display readonly-value" id="modifyCoachName">-</span>
+                    </div>
+                    <div class="info-row-display">
+                        <span class="info-label-display">门店</span>
+                        <span class="info-value-display readonly-value" id="modifyStore">-</span>
+                    </div>
+                </div>
+                
+                <!-- 可修改字段 -->
+                <div class="coach-modify-section">
+                    <div class="modify-row">
+                        <div class="modify-item">
+                            <label class="input-label required">预约日期</label>
+                            <input type="date" class="modify-input" id="modifyDate">
+                        </div>
+                    </div>
+                    <div class="modify-row two-col">
+                        <div class="modify-item">
+                            <label class="input-label required">开始时间</label>
+                            <input type="time" class="modify-input" id="modifyStartTime">
+                        </div>
+                        <div class="modify-item">
+                            <label class="input-label required">结束时间</label>
+                            <input type="time" class="modify-input" id="modifyEndTime">
+                        </div>
+                    </div>
+                    <div class="modify-row">
+                        <div class="modify-item">
+                            <label class="input-label required">订单金额(¥)</label>
+                            <div class="amount-input-wrapper">
+                                <button class="amount-btn minus" onclick="adjustAmount(-10)">−</button>
+                                <input type="number" class="modify-input amount-input" id="modifyAmount" value="0">
+                                <button class="amount-btn plus" onclick="adjustAmount(10)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeModifyCoachModal()">取消</button>
+                <button class="confirm-btn" onclick="submitModifyCoach()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 状态映射 - 场地预约
+        const statusMap = {
+            '0': { text: '未付款', class: 'status-unpaid' },
+            '1': { text: '正常', class: 'status-normal' },
+            '2': { text: '已取消', class: 'status-cancelled' },
+            '3': { text: '已退款', class: 'status-refunded' },
+            '4': { text: '已完成', class: 'status-completed' }
+        };
+        
+        // 状态映射 - 教练预约（1-待确认 2-已确认 3-待支付 4-已支付 5-已取消 6-已完成）
+        const coachStatusMap = {
+            '1': { text: '待确认', class: 'status-unpaid' },
+            '2': { text: '已确认', class: 'status-normal' },
+            '3': { text: '待支付', class: 'status-unpaid' },
+            '4': { text: '已支付', class: 'status-normal' },
+            '5': { text: '已取消', class: 'status-cancelled' },
+            '6': { text: '已完成', class: 'status-completed' }
+        };
+        
+        // 当前筛选条件
+        let currentFilter = {
+            phone: '',
+            status: '',
+            dateRange: '',
+            customDate: '',
+            court: ''
+        };
+        
+        // 当前 Tab
+        let currentTab = 'court';
+        
+        // 筛选区域展开状态
+        let isFilterExpanded = true;
+        
+        // 切换筛选区域展开/折叠
+        function toggleFilterRow() {
+            const secondaryRow = document.getElementById('filterRowSecondary');
+            const toggleBtn = document.getElementById('filterToggleBtn');
+            
+            isFilterExpanded = !isFilterExpanded;
+            
+            if (isFilterExpanded) {
+                secondaryRow.classList.remove('collapsed');
+                toggleBtn.classList.add('expanded');
+            } else {
+                secondaryRow.classList.add('collapsed');
+                toggleBtn.classList.remove('expanded');
+            }
+        }
+        
+        // 根据屏幕宽度自动调整筛选区域显示
+        function adjustFilterLayout() {
+            const secondaryRow = document.getElementById('filterRowSecondary');
+            const toggleBtn = document.getElementById('filterToggleBtn');
+            const screenWidth = window.innerWidth;
+            
+            // 小屏幕默认折叠
+            if (screenWidth <= 375) {
+                if (!toggleBtn.classList.contains('expanded')) {
+                    secondaryRow.classList.add('collapsed');
+                    isFilterExpanded = false;
+                }
+            } else {
+                // 大屏幕默认展开
+                secondaryRow.classList.remove('collapsed');
+                toggleBtn.classList.add('expanded');
+                isFilterExpanded = true;
+            }
+        }
+        
+        // 模拟数据 - 场地预约
+        const courtBookings = [
+            {
+                id: '336',
+                orderNo: 'CO20260312133434A002',
+                user: '13218179670',
+                courtName: '一号赛道',
+                session: '1',
+                startTime: '2026-03-12 13:30',
+                endTime: '2026-03-12 13:59',
+                actualStartTime: '2026-03-12 13:32',
+                actualEndTime: '2026-03-12 14:05',
+                price: '39.9',
+                status: '4',
+                createTime: '2026-03-12 13:34:34',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '335',
+                orderNo: 'CO20260311143034A001',
+                user: '13218179670',
+                courtName: '一号赛道',
+                session: '1',
+                startTime: '2026-03-11 14:30',
+                endTime: '2026-03-11 14:59',
+                actualStartTime: '2026-03-11 14:30',
+                actualEndTime: '2026-03-11 15:02',
+                price: '39.9',
+                status: '4',
+                createTime: '2026-03-11 14:30:34',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '334',
+                orderNo: 'CO20260310183846A001',
+                user: '18221332632',
+                courtName: '一号赛道',
+                session: '1',
+                startTime: '2026-03-11 07:30',
+                endTime: '2026-03-11 07:59',
+                actualStartTime: '2026-03-11 07:35',
+                actualEndTime: '2026-03-11 08:00',
+                price: '19.9',
+                status: '4',
+                createTime: '2026-03-10 18:38:46',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '333',
+                orderNo: 'CO20260303134036A001',
+                user: '13218179670',
+                courtName: '一号赛道',
+                session: '4',
+                startTime: '2026-03-03 19:30',
+                endTime: '2026-03-03 19:59',
+                actualStartTime: '2026-03-03 19:28',
+                actualEndTime: '2026-03-03 20:05',
+                price: '39.9',
+                status: '4',
+                createTime: '2026-03-03 14:00:52',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '333',
+                orderNo: 'CO20260303134036A001',
+                user: '13218179670',
+                courtName: '一号赛道',
+                session: '4',
+                startTime: '2026-03-03 18:00',
+                endTime: '2026-03-03 18:29',
+                actualStartTime: '2026-03-03 18:05',
+                actualEndTime: '2026-03-03 18:30',
+                price: '39.9',
+                status: '4',
+                createTime: '2026-03-03 14:01:09',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '333',
+                orderNo: 'CO20260303134036A001',
+                user: '13218179670',
+                courtName: '二号赛道',
+                session: '4',
+                startTime: '2026-03-03 15:00',
+                endTime: '2026-03-03 15:29',
+                actualStartTime: '2026-03-03 15:00',
+                actualEndTime: '2026-03-03 15:35',
+                price: '39.9',
+                status: '4',
+                createTime: '2026-03-03 13:40:36',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '333',
+                orderNo: 'CO20260303134036A001',
+                user: '13218179670',
+                courtName: '一号赛道',
+                session: '4',
+                startTime: '2026-03-03 14:30',
+                endTime: '2026-03-03 14:59',
+                price: '39.9',
+                status: '2',
+                createTime: '2026-03-03 13:40:36',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '328',
+                orderNo: 'CO20260214201942A001',
+                user: '13218179670',
+                courtName: '一号赛道',
+                session: '4',
+                startTime: '2026-02-14 22:00',
+                endTime: '2026-02-14 22:29',
+                price: '19.9',
+                status: '2',
+                createTime: '2026-02-14 20:19:42',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '340',
+                orderNo: 'CO20260315090001A001',
+                user: '13800138000',
+                courtName: '三号赛道',
+                session: '2',
+                startTime: '2026-03-15 09:00',
+                endTime: '2026-03-15 09:29',
+                price: '39.9',
+                status: '1',
+                createTime: '2026-03-14 20:00:00',
+                store: '上海浦东网球中心'
+            }
+        ];
+        
+        // 模拟数据 - 教练预约（状态：1-待确认 2-已确认 3-待支付 4-已支付 5-已取消 6-已完成）
+        const coachBookings = [
+            {
+                id: '65',
+                orderNo: 'CC20260313160001A001',
+                user: '13218179670',
+                coachName: '李教练',
+                lessonType: '普通私教1V1',
+                startTime: '2026-03-13 16:00',
+                endTime: '2026-03-13 18:00',
+                price: '360',
+                actualPrice: '0',
+                status: '5',  // 已取消
+                createTime: '2026-03-11 16:46:14',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '64',
+                orderNo: 'CC20260306073001A001',
+                user: '13137110747',
+                coachName: '李教练',
+                lessonType: '普通私教1V1',
+                startTime: '2026-03-06 07:30',
+                endTime: '2026-03-06 08:30',
+                price: '180',
+                actualPrice: '0',
+                status: '5',  // 已取消
+                createTime: '2026-03-05 17:58:43',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '63',
+                orderNo: 'CC20260209150001A001',
+                user: '13218179670',
+                coachName: '李教练',
+                lessonType: '双人团1V2',
+                startTime: '2026-02-09 15:00',
+                endTime: '2026-02-09 16:00',
+                price: '180',
+                actualPrice: '0',
+                status: '6',  // 已完成
+                createTime: '2026-02-07 16:50:28',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '62',
+                orderNo: 'CC20260208070001A001',
+                user: '13137110747',
+                coachName: '张教练',
+                lessonType: '普通私教1V1',
+                startTime: '2026-02-08 07:00',
+                endTime: '2026-02-08 08:00',
+                price: '200',
+                actualPrice: '0',
+                status: '6',  // 已完成
+                createTime: '2026-02-06 16:07:12',
+                store: '上海浦东网球中心'
+            },
+            {
+                id: '61',
+                orderNo: 'CC20260208120001A001',
+                user: '15300980113',
+                coachName: '李教练',
+                lessonType: '双人团1V2',
+                startTime: '2026-02-08 12:00',
+                endTime: '2026-02-08 13:00',
+                price: '330',
+                actualPrice: '0',
+                status: '2',  // 已确认（显示修改按钮）
+                createTime: '2026-02-06 15:30:19',
+                store: '黄浦江畔方格跳动'
+            },
+            {
+                id: '60',
+                orderNo: 'CC20260208120002A001',
+                user: '15300980113',
+                coachName: '李教练',
+                lessonType: '普通私教1V1',
+                startTime: '2026-02-08 12:00',
+                endTime: '2026-02-08 13:00',
+                price: '180',
+                actualPrice: '0',
+                status: '1',  // 待确认（显示确认和修改按钮）
+                createTime: '2026-02-06 15:24:43',
+                store: '黄浦江畔方格跳动'
+            },
+            {
+                id: '59',
+                orderNo: 'CC20260207100001A001',
+                user: '18817300868',
+                coachName: '李教练',
+                lessonType: '双人团1V2',
+                startTime: '2026-02-07 10:00',
+                endTime: '2026-02-07 11:00',
+                price: '330',
+                actualPrice: '0',
+                status: '3',  // 待支付（显示修改按钮）
+                createTime: '2026-02-06 15:16:01',
+                store: '上海浦东网球中心'
+            }
+        ];
+        
+        // 切换 Tab
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // 更新 Tab 样式
+            document.querySelectorAll('.tab-header-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            
+            // 显示/隐藏赛道筛选（仅场地预约显示）
+            const courtFilterRow = document.getElementById('courtFilterRow');
+            if (tab === 'court') {
+                courtFilterRow.style.display = 'flex';
+                document.getElementById('courtList').style.display = 'block';
+                document.getElementById('coachList').style.display = 'none';
+                renderCourtList();
+            } else {
+                courtFilterRow.style.display = 'none';
+                document.getElementById('courtList').style.display = 'none';
+                document.getElementById('coachList').style.display = 'block';
+                renderCoachList();
+            }
+        }
+        
+        // 渲染场地预约列表
+        function renderCourtList() {
+            const container = document.getElementById('courtList');
+            const filteredData = filterData(courtBookings);
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '';
+                document.getElementById('emptyState').classList.add('show');
+                return;
+            }
+            
+            document.getElementById('emptyState').classList.remove('show');
+            
+            container.innerHTML = filteredData.map(item => {
+                const status = statusMap[item.status] || { text: '未知', class: '' };
+                return `
+                    <div class="booking-card">
+                        <div class="card-header">
+                            <div class="booking-id-section">
+                                <span class="booking-id-label">预约编号</span>
+                                <span class="booking-id" onclick="copyText('${item.id}')">
+                                    ${item.id}
+                                    <span class="copy-icon">📋</span>
+                                </span>
+                                <span class="order-id" onclick="copyText('${item.orderNo}')">
+                                    订单: ${item.orderNo}
+                                    <span class="copy-icon">📋</span>
+                                </span>
+                            </div>
+                            <span class="status-badge ${status.class}">${status.text}</span>
+                        </div>
+                        
+                        <!-- 预定时间 - 所有订单都显示 -->
+                        <div class="time-section">
+                            <div class="time-item">
+                                <span class="time-label">开始时间</span>
+                                <span class="time-value">${item.startTime}</span>
+                            </div>
+                            <span class="time-divider">→</span>
+                            <div class="time-item">
+                                <span class="time-label">结束时间</span>
+                                <span class="time-value">${item.endTime}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 实际时间 - 仅已完成订单显示 -->
+                        ${item.status === '4' && item.actualStartTime && item.actualEndTime ? `
+                        <div class="time-section actual-time">
+                            <div class="time-item">
+                                <span class="time-label">实际开始</span>
+                                <span class="time-value actual">${item.actualStartTime}</span>
+                            </div>
+                            <span class="time-divider">→</span>
+                            <div class="time-item">
+                                <span class="time-label">实际结束</span>
+                                <span class="time-value actual">${item.actualEndTime}</span>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="card-body">
+                            <div class="info-item">
+                                <span class="info-label">用户手机号</span>
+                                <span class="info-value phone" onclick="copyText('${item.user}')">
+                                    ${item.user}
+                                    <span class="copy-icon">📋</span>
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">场地</span>
+                                <span class="info-value highlight">${item.courtName}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">场次</span>
+                                <span class="info-value">第${item.session}场</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">门店</span>
+                                <span class="info-value">${item.store}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <span class="create-time">创建时间: ${item.createTime}</span>
+                            <div class="price-section">
+                                <span class="price-label">价格</span>
+                                <span class="price-value">¥${item.price}</span>
+                            </div>
+                        </div>
+                        ${item.status === '1' ? `
+                        <div class="card-actions">
+                            <button class="switch-btn" onclick="switchBookingItem('${item.id}')">切换</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 渲染教练预约列表
+        function renderCoachList() {
+            const container = document.getElementById('coachList');
+            const filteredData = filterData(coachBookings);
+            
+            if (filteredData.length === 0) {
+                container.innerHTML = '';
+                document.getElementById('emptyState').classList.add('show');
+                return;
+            }
+            
+            document.getElementById('emptyState').classList.remove('show');
+            
+            container.innerHTML = filteredData.map(item => {
+                const status = coachStatusMap[item.status] || { text: '未知', class: '' };
+                // 提取预约日期和时段
+                const startDate = item.startTime.split(' ')[0];
+                const startTime = item.startTime.split(' ')[1];
+                const endTime = item.endTime.split(' ')[1];
+                const timeRange = `${startTime}-${endTime}`;
+                
+                // 根据状态生成操作按钮
+                let actionButtons = '';
+                if (item.status === '1') {
+                    // 待确认：显示确认和修改按钮
+                    actionButtons = `
+                        <div class="card-actions">
+                            <button class="action-btn success" onclick="confirmCoachBooking('${item.id}')">确认</button>
+                            <button class="action-btn" onclick="modifyCoachBooking('${item.id}')">修改</button>
+                        </div>
+                    `;
+                } else if (item.status === '2' || item.status === '3') {
+                    // 已确认、待支付：显示修改按钮
+                    actionButtons = `
+                        <div class="card-actions">
+                            <button class="action-btn" onclick="modifyCoachBooking('${item.id}')">修改</button>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="booking-card coach-booking-card">
+                        <div class="card-header">
+                            <div class="booking-id-section">
+                                <span class="booking-id-label">预约编号</span>
+                                <span class="booking-id" onclick="copyText('${item.id}')">
+                                    ${item.id}
+                                    <span class="copy-icon">📋</span>
+                                </span>
+                                <span class="order-no" onclick="copyText('${item.orderNo}')">
+                                    订单: ${item.orderNo}
+                                    <span class="copy-icon">📋</span>
+                                </span>
+                            </div>
+                            <span class="status-badge ${status.class}">${status.text}</span>
+                        </div>
+                        
+                        <div class="coach-info-section">
+                            <div class="coach-info-row">
+                                <div class="coach-info-item">
+                                    <span class="info-label">用户</span>
+                                    <span class="info-value phone" onclick="copyText('${item.user}')">
+                                        ${item.user}
+                                        <span class="copy-icon">📋</span>
+                                    </span>
+                                </div>
+                                <div class="coach-info-item">
+                                    <span class="info-label">教练</span>
+                                    <span class="info-value highlight">${item.coachName}</span>
+                                </div>
+                            </div>
+                            <div class="coach-info-row">
+                                <div class="coach-info-item">
+                                    <span class="info-label">门店</span>
+                                    <span class="info-value">${item.store}</span>
+                                </div>
+                                <div class="coach-info-item">
+                                    <span class="info-label">预约日期</span>
+                                    <span class="info-value">${startDate}</span>
+                                </div>
+                            </div>
+                            <div class="coach-info-row">
+                                <div class="coach-info-item">
+                                    <span class="info-label">时段</span>
+                                    <span class="info-value highlight">${timeRange}</span>
+                                </div>
+                                <div class="coach-info-item">
+                                    <span class="info-label">私教课类型</span>
+                                    <span class="info-value lesson-type-tag">${item.lessonType}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="coach-price-section">
+                            <div class="price-row">
+                                <span class="price-label">订单金额</span>
+                                <span class="price-value">¥${item.price}</span>
+                            </div>
+                            <div class="price-row">
+                                <span class="price-label">实际支付</span>
+                                <span class="price-value actual-pay">¥${item.actualPrice}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer coach-footer">
+                            <span class="create-time">${item.createTime}</span>
+                        </div>
+                        
+                        ${actionButtons}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 当前操作的预约ID
+        let currentBookingId = null;
+        
+        // 确认教练预约 - 打开备注弹窗
+        function confirmCoachBooking(bookingId) {
+            currentBookingId = bookingId;
+            const booking = coachBookings.find(b => b.id === bookingId);
+            if (!booking) return;
+            
+            // 填充弹窗信息
+            document.getElementById('confirmBookingId').textContent = booking.id;
+            document.getElementById('confirmCoachName').textContent = booking.coachName;
+            document.getElementById('confirmBookingTime').textContent = `${booking.startTime} - ${booking.endTime.split(' ')[1]}`;
+            document.getElementById('confirmRemarkInput').value = '';
+            
+            // 显示弹窗
+            document.getElementById('confirmRemarkModal').classList.add('active');
+        }
+        
+        // 关闭确认备注弹窗
+        function closeConfirmRemarkModal() {
+            document.getElementById('confirmRemarkModal').classList.remove('active');
+            currentBookingId = null;
+        }
+        
+        // 提交确认
+        function submitConfirmBooking() {
+            const remark = document.getElementById('confirmRemarkInput').value.trim();
+            
+            if (currentBookingId) {
+                const booking = coachBookings.find(b => b.id === currentBookingId);
+                if (booking) {
+                    booking.status = '2';
+                    booking.remark = remark; // 保存备注
+                    showToast(`预约 ${currentBookingId} 已确认`);
+                    renderCoachList();
+                }
+            }
+            closeConfirmRemarkModal();
+        }
+        
+        // 修改教练预约 - 打开修改弹窗
+        function modifyCoachBooking(bookingId) {
+            currentBookingId = bookingId;
+            const booking = coachBookings.find(b => b.id === bookingId);
+            if (!booking) return;
+            
+            // 填充只读信息
+            document.getElementById('modifyUserId').textContent = booking.user;
+            document.getElementById('modifyCoachName').textContent = booking.coachName;
+            document.getElementById('modifyStore').textContent = booking.store;
+            
+            // 填充可修改字段
+            const startDate = booking.startTime.split(' ')[0];
+            const startTime = booking.startTime.split(' ')[1];
+            const endTime = booking.endTime.split(' ')[1];
+            
+            document.getElementById('modifyDate').value = startDate;
+            document.getElementById('modifyStartTime').value = startTime;
+            document.getElementById('modifyEndTime').value = endTime;
+            document.getElementById('modifyAmount').value = booking.price;
+            
+            // 显示弹窗
+            document.getElementById('modifyCoachModal').classList.add('active');
+        }
+        
+        // 关闭修改弹窗
+        function closeModifyCoachModal() {
+            document.getElementById('modifyCoachModal').classList.remove('active');
+            currentBookingId = null;
+        }
+        
+        // 调整金额
+        function adjustAmount(delta) {
+            const input = document.getElementById('modifyAmount');
+            let value = parseInt(input.value) || 0;
+            value = Math.max(0, value + delta);
+            input.value = value;
+        }
+        
+        // 提交修改
+        function submitModifyCoach() {
+            if (!currentBookingId) return;
+            
+            const date = document.getElementById('modifyDate').value;
+            const startTime = document.getElementById('modifyStartTime').value;
+            const endTime = document.getElementById('modifyEndTime').value;
+            const amount = document.getElementById('modifyAmount').value;
+            
+            if (!date || !startTime || !endTime || !amount) {
+                showToast('请填写所有必填项');
+                return;
+            }
+            
+            const booking = coachBookings.find(b => b.id === currentBookingId);
+            if (booking) {
+                booking.startTime = `${date} ${startTime}`;
+                booking.endTime = `${date} ${endTime}`;
+                booking.price = amount;
+                showToast(`预约 ${currentBookingId} 修改成功`);
+                renderCoachList();
+            }
+            closeModifyCoachModal();
+        }
+        
+        // 筛选数据
+        function filterData(data) {
+            const filtered = data.filter(item => {
+                // 手机号筛选
+                if (currentFilter.phone && !item.user.includes(currentFilter.phone)) {
+                    return false;
+                }
+                // 状态筛选
+                if (currentFilter.status && item.status !== currentFilter.status) {
+                    return false;
+                }
+                // 日期筛选
+                if (currentFilter.customDate) {
+                    // 自定义指定日期筛选
+                    const itemDate = new Date(item.startTime);
+                    const filterDate = new Date(currentFilter.customDate);
+                    if (itemDate.toDateString() !== filterDate.toDateString()) {
+                        return false;
+                    }
+                } else if (currentFilter.dateRange) {
+                    const itemDate = new Date(item.startTime);
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    
+                    switch(currentFilter.dateRange) {
+                        case 'today':
+                            if (itemDate < today || itemDate >= tomorrow) return false;
+                            break;
+                        case 'tomorrow':
+                            const tomorrowEnd = new Date(tomorrow);
+                            tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+                            if (itemDate < tomorrow || itemDate >= tomorrowEnd) return false;
+                            break;
+                        case 'week':
+                            const weekAgo = new Date(today);
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            if (itemDate < weekAgo || itemDate >= tomorrow) return false;
+                            break;
+                        case 'month':
+                            const monthAgo = new Date(today);
+                            monthAgo.setDate(monthAgo.getDate() - 30);
+                            if (itemDate < monthAgo || itemDate >= tomorrow) return false;
+                            break;
+                    }
+                }
+                // 赛道筛选（仅场地预约）
+                if (currentFilter.court && item.courtName !== currentFilter.court) {
+                    return false;
+                }
+                return true;
+            });
+            
+            // 排序：状态为"正常"(status=1)的排在最前面
+            return filtered.sort((a, b) => {
+                if (a.status === '1' && b.status !== '1') return -1;
+                if (a.status !== '1' && b.status === '1') return 1;
+                // 如果状态相同，按创建时间倒序
+                return new Date(b.createTime) - new Date(a.createTime);
+            });
+        }
+        
+        // 查询
+        function searchBookings() {
+            currentFilter.phone = document.getElementById('phoneInput').value.trim();
+            if (currentTab === 'court') {
+                renderCourtList();
+            } else {
+                renderCoachList();
+            }
+        }
+        
+        // 显示状态筛选弹窗
+        function showStatusPicker() {
+            document.getElementById('statusPicker').classList.add('active');
+        }
+        
+        // 关闭状态筛选弹窗
+        function closeStatusPicker(event) {
+            if (!event || event.target.id === 'statusPicker') {
+                document.getElementById('statusPicker').classList.remove('active');
+            }
+        }
+        
+        // 选择状态
+        function selectStatus(value, text) {
+            currentFilter.status = value;
+            document.getElementById('statusText').textContent = text;
+            
+            // 更新选中样式
+            document.querySelectorAll('#statusPicker .picker-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            closeStatusPicker();
+            
+            // 重新渲染列表
+            if (currentTab === 'court') {
+                renderCourtList();
+            } else {
+                renderCoachList();
+            }
+        }
+        
+        // 显示时间筛选弹窗
+        function showDatePicker() {
+            document.getElementById('datePicker').classList.add('active');
+        }
+        
+        // 关闭时间筛选弹窗
+        function closeDatePicker(event) {
+            if (!event || event.target.id === 'datePicker') {
+                document.getElementById('datePicker').classList.remove('active');
+            }
+        }
+        
+        // 选择日期
+        function selectDate(value, text) {
+            currentFilter.dateRange = value;
+            currentFilter.customDate = ''; // 清除自定义日期
+            document.getElementById('dateText').textContent = text;
+            document.getElementById('customDateInput').value = ''; // 清空日期输入框
+            
+            // 更新选中样式
+            document.querySelectorAll('#datePicker .picker-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            closeDatePicker();
+            
+            // 重新渲染列表
+            if (currentTab === 'court') {
+                renderCourtList();
+            } else {
+                renderCoachList();
+            }
+        }
+        
+        // 选择自定义日期
+        function selectCustomDate(dateValue) {
+            if (!dateValue) return;
+            
+            currentFilter.customDate = dateValue;
+            currentFilter.dateRange = ''; // 清除预设日期范围
+            
+            // 格式化显示日期
+            const date = new Date(dateValue);
+            const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            document.getElementById('dateText').textContent = formattedDate;
+            
+            // 更新选中样式（清除预设选项的选中状态）
+            document.querySelectorAll('#datePicker .picker-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            closeDatePicker();
+            
+            // 重新渲染列表
+            if (currentTab === 'court') {
+                renderCourtList();
+            } else {
+                renderCoachList();
+            }
+        }
+        
+        // 显示赛道筛选弹窗
+        function showCourtPicker() {
+            document.getElementById('courtPicker').classList.add('active');
+        }
+        
+        // 关闭赛道筛选弹窗
+        function closeCourtPicker(event) {
+            if (!event || event.target.id === 'courtPicker') {
+                document.getElementById('courtPicker').classList.remove('active');
+            }
+        }
+        
+        // 选择赛道
+        function selectCourt(value, text) {
+            currentFilter.court = value;
+            document.getElementById('courtText').textContent = text;
+            
+            // 更新选中样式
+            document.querySelectorAll('#courtPicker .picker-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            closeCourtPicker();
+            
+            // 重新渲染场地列表
+            renderCourtList();
+        }
+        
+        // 切换预约项（打开修改场地弹窗）
+        function switchBookingItem(bookingId) {
+            // 显示修改场地弹窗
+            showChangeCourtModal();
+        }
+        
+        // 显示修改场地弹窗
+        function showChangeCourtModal() {
+            document.getElementById('changeCourtModal').classList.add('active');
+        }
+        
+        // 关闭修改场地弹窗
+        function closeChangeCourtModal() {
+            document.getElementById('changeCourtModal').classList.remove('active');
+        }
+        
+        // picker 弹窗相关变量
+        let pickerCallback = null;
+        let pickerTargetId = null;
+        
+        // 显示通用 picker 弹窗
+        function showPickerModal(title, options, currentValue, targetId) {
+            pickerTargetId = targetId;
+            document.getElementById('pickerModalTitle').textContent = title;
+            const listContainer = document.getElementById('pickerModalList');
+            
+            listContainer.innerHTML = options.map(opt => {
+                const isSelected = opt === currentValue;
+                return `
+                    <div class="picker-item ${isSelected ? 'active' : ''}" onclick="selectPickerOption('${opt}')">
+                        <span>${opt}</span>
+                        ${isSelected ? '<span class="picker-check">✓</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('pickerModal').classList.add('active');
+        }
+        
+        // 关闭 picker 弹窗
+        function closePickerModal(event) {
+            if (!event || event.target.id === 'pickerModal') {
+                document.getElementById('pickerModal').classList.remove('active');
+            }
+        }
+        
+        // 选择 picker 选项
+        function selectPickerOption(value) {
+            if (pickerTargetId) {
+                document.getElementById(pickerTargetId).textContent = value;
+            }
+            closePickerModal();
+        }
+        
+        // 显示日期选择器（修改场地）
+        function showChangeCourtDatePicker() {
+            const dates = ['2026-03-10', '2026-03-11', '2026-03-12', '2026-03-13', '2026-03-14'];
+            const current = document.getElementById('changeCourtDate').textContent;
+            showPickerModal('选择日期', dates, current, 'changeCourtDate');
+        }
+        
+        // 显示场地选择器（修改场地）
+        function showChangeCourtPicker() {
+            const courts = ['一号赛道', '二号赛道', '三号赛道', '四号赛道'];
+            const current = document.getElementById('changeCourtName').textContent;
+            showPickerModal('选择场地', courts, current, 'changeCourtName');
+        }
+        
+        // 显示时段选择器（修改场地）
+        function showChangeCourtTimePicker() {
+            const times = ['00:30-01:00', '01:00-01:30', '01:30-02:00', '02:00-02:30', '02:30-03:00'];
+            const current = document.getElementById('changeCourtTime').textContent;
+            showPickerModal('选择时段', times, current, 'changeCourtTime');
+        }
+        
+        // 当前选中的场次
+        let selectedSessionId = '1';
+        
+        // 选择场次
+        function selectSession(element) {
+            const sessionId = element.getAttribute('data-session');
+            const status = element.querySelector('.session-col.status').textContent;
+            
+            // 已占用的场次不能选择
+            if (status === '已占用') {
+                showToast('该场次已被占用，请选择其他场次');
+                return;
+            }
+            
+            // 更新选中状态
+            selectedSessionId = sessionId;
+            document.querySelectorAll('.session-item').forEach(item => {
+                item.classList.remove('selected');
+                const checkbox = item.querySelector('.checkbox');
+                checkbox.classList.remove('checked');
+                checkbox.textContent = '';
+            });
+            
+            element.classList.add('selected');
+            const checkbox = element.querySelector('.checkbox');
+            checkbox.classList.add('checked');
+            checkbox.textContent = '✓';
+            
+            // 更新已选场次信息
+            updateSelectedSessionInfo(element);
+        }
+        
+        // 更新已选场次信息
+        function updateSelectedSessionInfo(element) {
+            const date = element.querySelector('.session-col.date').textContent;
+            const time = element.querySelector('.session-col.time').textContent;
+            const price = element.querySelector('.session-col.price').textContent;
+            const courtName = document.getElementById('changeCourtName').textContent;
+            
+            document.getElementById('selectedSessionInfo').innerHTML = `
+                <span class="court-name">${courtName}</span>
+                <span class="session-time">${date} ${time}</span>
+                <span class="session-price">${price}</span>
+            `;
+        }
+        
+        // 确认修改场地
+        function confirmChangeCourt() {
+            showToast('场地修改成功！');
+            closeChangeCourtModal();
+            // 刷新预约列表
+            if (currentTab === 'court') {
+                renderCourtList();
+            }
+        }
+        
+        // 复制文本
+        function copyText(text) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(`已复制: ${text}`);
+                });
+            } else {
+                // 降级方案
+                const input = document.createElement('input');
+                input.value = text;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast(`已复制: ${text}`);
+            }
+        }
+        
+        // 显示 Toast
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCourtList();
+            
+            // 初始化筛选区域布局
+            adjustFilterLayout();
+            
+            // 监听窗口大小变化
+            window.addEventListener('resize', adjustFilterLayout);
+            
+            // 底部导航栏事件监听
+            document.querySelectorAll('.tab-bar .tab-item').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const page = this.dataset.page;
+                    
+                    // 更新 Tab 样式
+                    document.querySelectorAll('.tab-bar .tab-item').forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    
+                    // 页面跳转
+                    switch(page) {
+                        case 'home':
+                            window.location.href = 'preview.html';
+                            break;
+                        case 'order':
+                            window.location.href = 'order-preview.html';
+                            break;
+                        case 'court':
+                            window.location.href = 'court-preview.html';
+                            break;
+                        case 'booking':
+                            // 已在预约页，刷新
+                            location.reload();
+                            break;
+                        case 'coupon':
+                            window.location.href = 'coupon-preview.html';
+                            break;
+                        case 'profile':
+                            showToast('我的页面开发中...');
+                            break;
+                    }
+                });
+            });
+        });
+        
+        // 手机号输入框回车事件
+        document.getElementById('phoneInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBookings();
+            }
+        });
+    </script>
+</body>
+</html>

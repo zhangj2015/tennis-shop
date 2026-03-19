@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>登录 - 方格跳动</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .mobile-frame {
+            max-width: 414px; margin: 0 auto;
+            min-height: 100vh; position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            background: linear-gradient(180deg, #1e3a5f 0%, #3b82f6 40%, #f5f5f5 100%);
+            overflow: hidden;
+        }
+
+        /* 装饰圆 */
+        .decor-circle {
+            position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+        }
+        .decor-circle.c1 { width: 200px; height: 200px; top: -60px; right: -60px; }
+        .decor-circle.c2 { width: 140px; height: 140px; bottom: 120px; left: -50px; }
+        .decor-circle.c3 { width: 80px; height: 80px; top: 160px; left: 30px; background: rgba(255,255,255,0.04); }
+
+        /* 顶部品牌区 */
+        .brand-section {
+            padding: 80px 32px 40px;
+            position: relative; z-index: 1;
+            text-align: center;
+        }
+        .brand-logo {
+            width: 80px; height: 80px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 24px; margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 42px;
+            border: 2px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        .brand-name {
+            font-size: 26px; font-weight: 700; color: #fff;
+            margin-bottom: 8px; letter-spacing: 1px;
+        }
+        .brand-sub {
+            font-size: 14px; color: rgba(255,255,255,0.7);
+            letter-spacing: 2px;
+        }
+
+        /* 登录卡片 */
+        .login-card {
+            margin: 0 20px;
+            background: #fff;
+            border-radius: 20px;
+            padding: 32px 24px;
+            position: relative; z-index: 1;
+            box-shadow: 0 10px 40px rgba(30, 58, 95, 0.15);
+        }
+        .login-title {
+            font-size: 22px; font-weight: 700; color: #1f2937;
+            margin-bottom: 6px;
+        }
+        .login-desc {
+            font-size: 13px; color: #9ca3af; margin-bottom: 28px;
+        }
+
+        /* 表单 */
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            font-size: 13px; font-weight: 600; color: #374151;
+            margin-bottom: 8px; display: block;
+        }
+        .input-wrapper {
+            display: flex; align-items: center;
+            background: #f9fafb;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 0 14px;
+            height: 48px;
+            transition: all 0.25s ease;
+        }
+        .input-wrapper:focus-within {
+            border-color: #3b82f6;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .input-wrapper.error {
+            border-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        .input-icon {
+            font-size: 18px; margin-right: 10px; flex-shrink: 0;
+            color: #9ca3af;
+        }
+        .input-wrapper:focus-within .input-icon { color: #3b82f6; }
+        .form-input {
+            flex: 1; border: none; outline: none; background: transparent;
+            font-size: 15px; color: #1f2937;
+            height: 100%;
+        }
+        .form-input::placeholder { color: #c4c9d4; }
+        .form-error {
+            font-size: 12px; color: #ef4444; margin-top: 6px;
+            display: none; padding-left: 2px;
+        }
+        .form-error.show { display: block; animation: shakeIn 0.3s ease; }
+        @keyframes shakeIn {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        /* 验证码行 */
+        .code-row {
+            display: flex; gap: 10px;
+            max-width: 100%; overflow: hidden;
+        }
+        .code-row .input-wrapper { flex: 1; min-width: 0; }
+        .code-btn {
+            flex-shrink: 0; height: 48px;
+            padding: 0 14px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            color: #fff; border: none; border-radius: 12px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.25s ease;
+            max-width: 100px;
+        }
+        .code-btn:active { transform: scale(0.97); opacity: 0.9; }
+        .code-btn:disabled {
+            background: #d1d5db; color: #9ca3af;
+            cursor: not-allowed; transform: none;
+        }
+
+        /* 登录按钮 */
+        .login-btn {
+            width: 100%; height: 50px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            color: #fff; border: none; border-radius: 14px;
+            font-size: 17px; font-weight: 600; cursor: pointer;
+            margin-top: 8px;
+            box-shadow: 0 4px 15px rgba(30, 58, 95, 0.3);
+            transition: all 0.25s ease;
+            position: relative; overflow: hidden;
+        }
+        .login-btn:active { transform: scale(0.98); box-shadow: 0 2px 8px rgba(30, 58, 95, 0.2); }
+        .login-btn:disabled {
+            background: #d1d5db; box-shadow: none;
+            cursor: not-allowed; transform: none;
+        }
+        .login-btn .btn-loading {
+            display: none; position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+        }
+        .login-btn.loading .btn-text { visibility: hidden; }
+        .login-btn.loading .btn-loading { display: block; }
+        .spinner {
+            width: 22px; height: 22px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* 底部协议 */
+        .agreement {
+            margin-top: 24px;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .agreement-check {
+            width: 18px; height: 18px;
+            border: 1.5px solid #d1d5db; border-radius: 4px;
+            flex-shrink: 0; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 1px; transition: all 0.2s;
+        }
+        .agreement-check.checked {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-color: #3b82f6;
+        }
+        .agreement-check.checked::after {
+            content: '✓'; color: #fff; font-size: 12px; font-weight: 700;
+        }
+        .agreement-text {
+            font-size: 12px; color: #9ca3af; line-height: 1.8;
+            flex: 1;
+        }
+        .agreement-link {
+            color: #3b82f6; cursor: pointer;
+            white-space: nowrap;
+        }
+        .agreement-link:active { opacity: 0.7; }
+
+        /* 底部装饰 */
+        .footer-info {
+            text-align: center; padding: 40px 20px 30px;
+            position: relative; z-index: 1;
+        }
+        .footer-version {
+            font-size: 12px; color: #9ca3af;
+        }
+
+        /* 确认弹窗 - 退出登录 */
+        .confirm-modal {
+            display: none; position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 2000;
+            justify-content: center; align-items: center;
+        }
+        .confirm-modal.active { display: flex; }
+        .confirm-box {
+            background: #fff; border-radius: 16px;
+            width: 300px; padding: 28px 24px 20px;
+            text-align: center;
+            animation: popIn 0.3s ease;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .confirm-icon { font-size: 44px; margin-bottom: 12px; }
+        .confirm-title { font-size: 17px; font-weight: 600; color: #1f2937; margin-bottom: 8px; }
+        .confirm-desc { font-size: 13px; color: #6b7280; margin-bottom: 24px; line-height: 1.6; }
+        .confirm-actions { display: flex; gap: 12px; }
+        .confirm-btn {
+            flex: 1; height: 42px; border-radius: 10px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            border: none; transition: all 0.2s;
+        }
+        .confirm-btn:active { transform: scale(0.97); }
+        .confirm-btn.cancel {
+            background: #f3f4f6; color: #6b7280;
+        }
+        .confirm-btn.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            color: #fff; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.75); color: #fff;
+            padding: 14px 28px; border-radius: 10px;
+            font-size: 14px; z-index: 9999; display: none;
+            backdrop-filter: blur(4px);
+        }
+        .toast.show { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    </style>
+</head>
+<body>
+    <div class="mobile-frame">
+        <!-- 装饰圆 -->
+        <div class="decor-circle c1"></div>
+        <div class="decor-circle c2"></div>
+        <div class="decor-circle c3"></div>
+
+        <!-- 品牌区 -->
+        <div class="brand-section">
+            <div class="brand-logo">🎾</div>
+            <div class="brand-name">方格跳动</div>
+            <div class="brand-sub">店长管理系统</div>
+        </div>
+
+        <!-- 登录卡片 -->
+        <div class="login-card">
+            <div class="login-title">欢迎登录</div>
+            <div class="login-desc">请使用手机号验证码登录管理系统</div>
+
+            <!-- 手机号 -->
+            <div class="form-group">
+                <label class="form-label">手机号码</label>
+                <div class="input-wrapper" id="phoneWrapper">
+                    <span class="input-icon">📱</span>
+                    <input class="form-input" id="phoneInput" type="tel"
+                           placeholder="请输入手机号码" maxlength="11"
+                           oninput="this.value=this.value.replace(/\D/g,''); onPhoneInput();">
+                </div>
+                <div class="form-error" id="phoneError">请输入正确的11位手机号码</div>
+            </div>
+
+            <!-- 验证码 -->
+            <div class="form-group">
+                <label class="form-label">验证码</label>
+                <div class="code-row">
+                    <div class="input-wrapper" id="codeWrapper">
+                        <span class="input-icon">🔐</span>
+                        <input class="form-input" id="codeInput" type="tel"
+                               placeholder="请输入验证码" maxlength="6"
+                               oninput="this.value=this.value.replace(/\D/g,''); onCodeInput();">
+                    </div>
+                    <button class="code-btn" id="codeBtn" onclick="sendCode()">获取验证码</button>
+                </div>
+                <div class="form-error" id="codeError">请输入6位验证码</div>
+            </div>
+
+            <!-- 登录按钮 -->
+            <button class="login-btn" id="loginBtn" onclick="doLogin()">
+                <span class="btn-text">登 录</span>
+                <div class="btn-loading"><div class="spinner"></div></div>
+            </button>
+
+            <!-- 用户协议 -->
+            <div class="agreement">
+                <div class="agreement-check checked" id="agreeCheck" onclick="toggleAgreement()"></div>
+                <div class="agreement-text">
+                    登录即代表您已阅读并同意<span class="agreement-link" onclick="showToast('用户服务协议')">《用户服务协议》</span>和<span class="agreement-link" onclick="showToast('隐私政策')">《隐私政策》</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部信息 -->
+        <div class="footer-info">
+            <div class="footer-version">v1.0.0</div>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+        let countdown = 0;
+        let timer = null;
+        let agreed = true;
+        const MOCK_CODE = '123456'; // 模拟验证码
+
+        // ========== 输入事件 ==========
+        function onPhoneInput() {
+            clearError('phoneWrapper', 'phoneError');
+        }
+
+        function onCodeInput() {
+            clearError('codeWrapper', 'codeError');
+        }
+
+        function clearError(wrapperId, errorId) {
+            document.getElementById(wrapperId).classList.remove('error');
+            document.getElementById(errorId).classList.remove('show');
+        }
+
+        function showError(wrapperId, errorId, msg) {
+            if (msg) document.getElementById(errorId).textContent = msg;
+            document.getElementById(wrapperId).classList.add('error');
+            document.getElementById(errorId).classList.add('show');
+        }
+
+        // ========== 手机号验证 ==========
+        function isValidPhone(phone) {
+            return /^1[3-9]\d{9}$/.test(phone);
+        }
+
+        // ========== 发送验证码 ==========
+        function sendCode() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            if (!isValidPhone(phone)) {
+                showError('phoneWrapper', 'phoneError', '请输入正确的11位手机号码');
+                return;
+            }
+
+            // 开始倒计时
+            countdown = 60;
+            const btn = document.getElementById('codeBtn');
+            btn.disabled = true;
+            btn.textContent = countdown + 's';
+
+            timer = setInterval(function() {
+                countdown--;
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    btn.textContent = '重新获取';
+                } else {
+                    btn.textContent = countdown + 's';
+                }
+            }, 1000);
+
+            showToast('验证码已发送至 ' + phone.substring(0, 3) + '****' + phone.substring(7));
+        }
+
+        // ========== 登录 ==========
+        function doLogin() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            const code = document.getElementById('codeInput').value.trim();
+            let valid = true;
+
+            // 验证手机号
+            if (!isValidPhone(phone)) {
+                showError('phoneWrapper', 'phoneError', '请输入正确的11位手机号码');
+                valid = false;
+            }
+
+            // 验证码
+            if (!code || code.length < 6) {
+                showError('codeWrapper', 'codeError', '请输入6位验证码');
+                valid = false;
+            }
+
+            // 协议
+            if (!agreed) {
+                showToast('请先同意用户服务协议和隐私政策');
+                return;
+            }
+
+            if (!valid) return;
+
+            // 模拟验证码校验
+            if (code !== MOCK_CODE) {
+                showError('codeWrapper', 'codeError', '验证码错误，请重新输入');
+                return;
+            }
+
+            // 登录中...
+            const btn = document.getElementById('loginBtn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            setTimeout(function() {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+
+                // 模拟登录成功，保存登录状态
+                localStorage.setItem('tennis_login', JSON.stringify({
+                    phone: phone,
+                    loginTime: new Date().toISOString(),
+                    token: 'mock_token_' + Date.now()
+                }));
+
+                showToast('登录成功');
+                setTimeout(function() {
+                    window.location.href = 'preview.html';
+                }, 1000);
+            }, 1500);
+        }
+
+        // ========== 协议勾选 ==========
+        function toggleAgreement() {
+            agreed = !agreed;
+            const el = document.getElementById('agreeCheck');
+            if (agreed) {
+                el.classList.add('checked');
+            } else {
+                el.classList.remove('checked');
+            }
+        }
+
+        // ========== Toast ==========
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 2000);
+        }
+    </script>
+</body>
+</html>

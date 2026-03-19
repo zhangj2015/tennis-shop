@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>方格跳动门店数据看板 - 预览</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        /* 模拟手机屏幕 */
+        .mobile-frame {
+            max-width: 414px;
+            margin: 0 auto;
+            background: #f5f5f5;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* 顶部区域 */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            padding: 20px 16px;
+            padding-top: 44px;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .store-name { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+        .store-detail { display: flex; align-items: center; margin-bottom: 4px; }
+        .store-detail .icon { font-size: 14px; margin-right: 6px; }
+        .store-detail .text { font-size: 13px; color: rgba(255,255,255,0.9); }
+        
+        /* 营业状态样式 - 与场地页面保持一致 */
+        .store-status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .store-status-badge {
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .store-status-badge.open {
+            background: #d1fae5;
+            color: #059669;
+        }
+        .store-status-badge.closed {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        .store-hours {
+            font-size: 13px;
+            color: rgba(255,255,255,0.9);
+        }
+        .refresh-btn {
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .refresh-btn:active { opacity: 0.7; transform: scale(0.95); }
+        .refresh-btn.spinning { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        /* 门店切换 */
+        .store-switch {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 4px 8px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 16px;
+            transition: all 0.2s;
+        }
+        .store-switch:active { background: rgba(255,255,255,0.25); }
+        .store-switch .arrow { font-size: 12px; color: rgba(255,255,255,0.8); }
+        
+        /* 门店选择弹窗 */
+        .store-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .store-modal.active { display: flex; }
+        .store-modal-content {
+            background: #fff;
+            width: 100%;
+            max-width: 414px;
+            border-radius: 20px 20px 0 0;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        .store-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .store-modal-title { font-size: 18px; font-weight: 600; color: #1f2937; }
+        .store-modal-close { font-size: 24px; color: #9ca3af; cursor: pointer; }
+        .store-list { padding: 12px; }
+        .store-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .store-item:active { background: #f3f4f6; }
+        .store-item.active { background: #eff6ff; border: 1px solid #3b82f6; }
+        .store-item-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a5f 100%);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            margin-right: 12px;
+        }
+        .store-item-info { flex: 1; }
+        .store-item-name { font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 4px; }
+        .store-item-address { font-size: 13px; color: #6b7280; }
+        .store-item-check { font-size: 20px; color: #3b82f6; }
+        
+        /* 主内容 */
+        .main-content { padding-bottom: 80px; }
+        
+        /* 模块 */
+        .section { margin: 12px 16px; }
+        .section-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .section-title { font-size: 16px; font-weight: 600; color: #1f2937; }
+        .update-time { font-size: 12px; color: #6b7280; }
+        
+        /* 卡片网格 */
+        .card-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+        }
+        .card {
+            border-radius: 12px; padding: 16px;
+            transition: all 0.2s; cursor: pointer;
+        }
+        .card:active { opacity: 0.8; transform: scale(0.98); }
+        .card-today {
+            background: linear-gradient(135deg, #e8f4fc 0%, #d1e9f7 100%);
+            border: 1px solid #bfdbfe;
+        }
+        .card-month {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            border: 1px solid #d1d5db;
+        }
+        .card-label { font-size: 13px; color: #6b7280; display: block; margin-bottom: 6px; }
+        .card-value { display: flex; align-items: baseline; margin-bottom: 4px; }
+        .card-value .number { font-size: 22px; font-weight: 700; color: #1e3a5f; }
+        .card-value .unit { font-size: 12px; color: #6b7280; margin-left: 4px; }
+        .card-value .currency { font-size: 16px; font-weight: 600; color: #1e3a5f; margin-right: 2px; }
+        .trend { font-size: 11px; }
+        .trend.up { color: #10b981; }
+        .trend.neutral { color: #6b7280; }
+        .trend.warning { color: #f97316; }
+        .trend.info { color: #3b82f6; display: none; }
+        
+        /* 图表区域 */
+        .chart-section {
+            background: #fff; border-radius: 12px; padding: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .dimension-switch {
+            display: flex; background: #f3f4f6; border-radius: 6px; padding: 3px;
+        }
+        .dim-btn {
+            padding: 4px 16px; font-size: 12px; color: #6b7280;
+            border-radius: 4px; cursor: pointer; transition: all 0.2s;
+        }
+        .dim-btn.active {
+            background: #fff; color: #3b82f6;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .chart-container { height: 200px; margin: 12px 0; }
+        .chart-legend {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 8px;
+        }
+        .legend-item { display: flex; align-items: center; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .legend-text { font-size: 13px; color: #6b7280; }
+        .chart-hint { text-align: center; font-size: 11px; color: #9ca3af; }
+        
+        /* 待办事项模块 */
+        .todo-section {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .todo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px 10px;
+        }
+        .todo-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .todo-header-left .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .todo-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 10px;
+        }
+        .todo-view-all {
+            font-size: 13px;
+            color: #3b82f6;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .todo-view-all:active { opacity: 0.7; }
+        
+        /* 待办分类标签 */
+        .todo-tabs {
+            display: flex;
+            gap: 0;
+            padding: 0 16px 10px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .todo-tabs::-webkit-scrollbar { display: none; }
+        .todo-tab {
+            flex-shrink: 0;
+            padding: 5px 14px;
+            font-size: 12px;
+            color: #6b7280;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+        .todo-tab.active {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            color: #1e40af;
+            font-weight: 600;
+            border-color: #93c5fd;
+        }
+        .todo-tab:active { opacity: 0.7; }
+        
+        /* 待办列表 */
+        .todo-list {
+            padding: 0 16px 8px;
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #f3f4f6;
+            background: #fafbfc;
+        }
+        .todo-item:active {
+            transform: scale(0.98);
+            background: #f3f4f6;
+        }
+        .todo-item:last-child { margin-bottom: 4px; }
+        
+        .todo-item-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .todo-item-icon.order { background: #fef3c7; }
+        .todo-item-icon.refund { background: #fee2e2; }
+        .todo-item-icon.booking { background: #d1fae5; }
+        .todo-item-icon.coupon { background: #e0e7ff; }
+        .todo-item-icon.member { background: #fce7f3; }
+        .todo-item-icon.facility { background: #f3e8ff; }
+        
+        .todo-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .todo-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f2937;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .todo-item-title .urgent-tag {
+            font-size: 10px;
+            padding: 1px 5px;
+            background: #fef2f2;
+            color: #dc2626;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .todo-item-title .normal-tag {
+            font-size: 10px;
+            padding: 1px 5px;
+            background: #fefce8;
+            color: #ca8a04;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .todo-item-desc {
+            font-size: 12px;
+            color: #9ca3af;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .todo-item-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+        .todo-item-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+        .todo-item-btn {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .todo-item-btn.process {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+        }
+        .todo-item-btn.process:active {
+            opacity: 0.8;
+            transform: scale(0.95);
+        }
+        .todo-item-btn.done {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        /* 待办为空 */
+        .todo-empty {
+            text-align: center;
+            padding: 24px 16px;
+            color: #9ca3af;
+        }
+        .todo-empty-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+        .todo-empty-text {
+            font-size: 13px;
+        }
+        
+        /* 处理弹窗 */
+        .todo-action-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .todo-action-modal.active { display: flex; }
+        .todo-action-content {
+            background: #fff;
+            width: 100%;
+            max-width: 414px;
+            border-radius: 20px 20px 0 0;
+            padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .todo-action-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        .todo-action-subtitle {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 20px;
+        }
+        .todo-action-detail {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .todo-action-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 13px;
+        }
+        .todo-action-detail-row .label { color: #6b7280; }
+        .todo-action-detail-row .value { color: #1f2937; font-weight: 500; }
+        .todo-action-btns {
+            display: flex;
+            gap: 12px;
+        }
+        .todo-action-btns button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .todo-action-btns button:active { transform: scale(0.97); }
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .btn-confirm {
+            background: linear-gradient(135deg, #3b82f6, #1e3a5f);
+            color: #fff;
+        }
+        .btn-reject {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+        }
+        
+        /* 快捷功能 */
+        .quick-actions {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+            margin-top: 12px;
+        }
+        .action-item {
+            display: flex; flex-direction: column; align-items: center;
+            cursor: pointer;
+        }
+        .action-item:active { opacity: 0.7; transform: scale(0.95); }
+        .action-icon {
+            width: 48px; height: 48px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 6px;
+        }
+        .action-icon .icon { font-size: 24px; }
+        .action-label { font-size: 13px; color: #4b5563; }
+        
+        /* 底部导航 - ui-ux-pro-max 规范 */
+        .tab-bar {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 414px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 左侧和右侧容器 */
+        .tab-bar-left, .tab-bar-right {
+            display: flex; flex: 1; justify-content: space-around;
+            min-width: 0; /* 防止flex子项溢出 */
+        }
+        
+        /* 确保所有Tab项都可见 */
+        .tab-bar .tab-item {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* 强制显示所有tab容器 */
+        .tab-bar-left, .tab-bar-right {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+        }
+        
+        /* 隐藏任何可能覆盖的元素 */
+        .tab-bar * {
+            visibility: visible;
+        }
+        
+        /* 普通导航项 */
+        .tab-item {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 6px 12px; cursor: pointer; border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-item:active {
+            transform: scale(0.95);
+            background: rgba(59, 130, 246, 0.08);
+        }
+        .tab-item.active {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .tab-item.active .tab-icon, .tab-item.active .tab-label { 
+            color: #1e3a5f; font-weight: 600;
+        }
+        .tab-icon { font-size: 20px; margin-bottom: 3px; color: #94a3b8; transition: all 0.3s ease; }
+        .tab-label { font-size: 10px; color: #94a3b8; transition: all 0.3s ease; font-weight: 500; }
+        
+        /* 中间首页 - 突出显示 */
+        .tab-item-center {
+            position: relative; padding: 0; margin: 0 8px;
+        }
+        .tab-item-center .center-icon-wrapper {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(30, 58, 95, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2);
+            margin-bottom: 4px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid #fff;
+        }
+        .tab-item-center:active .center-icon-wrapper {
+            transform: scale(0.92);
+            box-shadow: 0 2px 10px rgba(30, 58, 95, 0.25);
+        }
+        .tab-item-center .tab-icon {
+            font-size: 24px; color: #ffffff; margin-bottom: 0;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+        }
+        .tab-item-center .tab-label {
+            font-size: 11px; color: #1e3a5f; font-weight: 600;
+        }
+        .tab-item-center.active .tab-label { color: #1e3a5f; }
+        
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10000;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+        
+        .toast.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-frame">
+        <!-- 顶部区域 -->
+        <div class="header">
+            <div class="header-content">
+                <div>
+                    <div class="store-name" id="storeName">方格跳动（朝阳店）</div>
+                    <div class="store-detail">
+                        <span class="icon">📍</span>
+                        <span class="text" id="storeAddress">北京市朝阳区建国路88号</span>
+                    </div>
+                    <div class="store-status-row">
+                        <span class="store-status-badge open" id="storeStatusBadge">营业中</span>
+                        <span class="store-hours" id="storeHours">8:00-22:00营业</span>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                    <div class="store-switch" onclick="showStoreModal()">
+                        <span style="color: #fff; font-size: 13px;">切换门店</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="refresh-btn" id="refreshBtn">
+                        <span style="color: #fff; font-size: 18px;">↻</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容 -->
+        <div class="main-content">
+            <!-- 待办事项模块 -->
+            <div class="section">
+                <div class="todo-section" id="todoSection">
+                    <div class="todo-header">
+                        <div class="todo-header-left">
+                            <span class="section-title">📌 待办事项</span>
+                            <span class="todo-badge" id="todoBadge">6</span>
+                        </div>
+                        <span class="todo-view-all" onclick="showAllTodos()">
+                            查看全部 <span style="font-size:14px;">›</span>
+                        </span>
+                    </div>
+                    <!-- 分类标签 -->
+                    <div class="todo-tabs" id="todoTabs">
+                        <span class="todo-tab active" data-filter="all" onclick="filterTodos('all', this)">全部</span>
+                        <span class="todo-tab" data-filter="booking" onclick="filterTodos('booking', this)">预约确认</span>
+                    </div>
+                    <!-- 待办列表 -->
+                    <div class="todo-list" id="todoList">
+                        <!-- JS 动态渲染 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 今日数据 -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">今日数据</span>
+                    <span class="update-time" id="updateTime">数据更新时间：14:30</span>
+                </div>
+                <div class="card-grid">
+                    <div class="card card-today">
+                        <span class="card-label">当日订单</span>
+                        <div class="card-value">
+                            <span class="number" id="orderCount">128</span>
+                            <span class="unit">单</span>
+                        </div>
+                        <span class="trend up">↑ 12% 较昨日</span>
+                    </div>
+                    <div class="card card-today">
+                        <span class="card-label">微信收入</span>
+                        <div class="card-value">
+                            <span class="currency">¥</span>
+                            <span class="number" id="income">15,680</span>
+                        </div>
+                        <span class="trend up">↑ 8% 较昨日</span>
+                    </div>
+                    <div class="card card-today">
+                        <span class="card-label">优惠券使用</span>
+                        <div class="card-value">
+                            <span class="number">45</span>
+                            <span class="unit">张</span>
+                        </div>
+                        <span class="trend neutral">使用率 68%</span>
+                    </div>
+                    <div class="card card-today">
+                        <span class="card-label">订场数量</span>
+                        <div class="card-value">
+                            <span class="number">32</span>
+                            <span class="unit">场</span>
+                        </div>
+                        <span class="trend warning">剩余 8 场</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 本月汇总 -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">本月汇总</span>
+                    <span class="update-time">统计周期：3月1日-31日</span>
+                </div>
+                <div class="card-grid">
+                    <div class="card card-month">
+                        <span class="card-label">本月订单</span>
+                        <div class="card-value">
+                            <span class="number">3,456</span>
+                            <span class="unit">单</span>
+                        </div>
+                        <span class="trend info">目标完成 85%</span>
+                    </div>
+                    <div class="card card-month">
+                        <span class="card-label">本月订场</span>
+                        <div class="card-value">
+                            <span class="number">892</span>
+                            <span class="unit">场</span>
+                        </div>
+                        <span class="trend info">目标完成 92%</span>
+                    </div>
+                    <div class="card card-month">
+                        <span class="card-label">本月收款</span>
+                        <div class="card-value">
+                            <span class="currency">¥</span>
+                            <span class="number">428,560</span>
+                        </div>
+                        <span class="trend info">目标完成 78%</span>
+                    </div>
+                    <div class="card card-month">
+                        <span class="card-label">优惠券使用</span>
+                        <div class="card-value">
+                            <span class="number">1,234</span>
+                            <span class="unit">张</span>
+                        </div>
+                        <span class="trend info">拉动消费 ¥98,720</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 趋势图表 -->
+            <div class="section">
+                <div class="chart-section">
+                    <div class="section-header">
+                        <span class="section-title">经营趋势</span>
+                        <div class="dimension-switch">
+                            <span class="dim-btn active" data-dim="day">日</span>
+                            <span class="dim-btn" data-dim="week">周</span>
+                            <span class="dim-btn" data-dim="month">月</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #3b82f6;"></div>
+                            <span class="legend-text">订单量</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #10b981;"></div>
+                            <span class="legend-text">订场数</span>
+                        </div>
+                    </div>
+                    <div class="chart-hint">点击图表查看单日详情</div>
+                </div>
+            </div>
+
+            <!-- 底部占位 -->
+            <div style="height: 60px;"></div>
+        </div>
+
+        <!-- 底部导航 - ui-ux-pro-max 规范 (5个Tab：订单、预约、首页、优惠券、我的) -->
+        <div class="tab-bar">
+            <!-- 左侧：订单、预约 -->
+            <div class="tab-bar-left">
+                <div class="tab-item" data-page="order">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-label">订单</span>
+                </div>
+                <div class="tab-item" data-page="court">
+                    <span class="tab-icon">🏟️</span>
+                    <span class="tab-label">场地</span>
+                </div>
+            </div>
+            
+            <!-- 中间：首页（突出显示） -->
+            <div class="tab-item tab-item-center active" data-page="home">
+                <div class="center-icon-wrapper">
+                    <span class="tab-icon">🏠</span>
+                </div>
+                <span class="tab-label">首页</span>
+            </div>
+            
+            <!-- 右侧：优惠券、我的 -->
+            <div class="tab-bar-right">
+                <a href="coupon-preview.html" class="tab-item" data-page="coupon">
+                    <span class="tab-icon">🎫</span>
+                    <span class="tab-label">优惠券</span>
+                </a>
+                <a href="profile-preview.html" class="tab-item" data-page="profile">
+                    <span class="tab-icon">👤</span>
+                    <span class="tab-label">我的</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Toast 提示 -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- 待办处理弹窗 -->
+    <div class="todo-action-modal" id="todoActionModal" onclick="closeTodoModal(event)">
+        <div class="todo-action-content" onclick="event.stopPropagation()">
+            <div class="todo-action-title" id="todoModalTitle">处理待办</div>
+            <div class="todo-action-subtitle" id="todoModalSubtitle">请确认处理方式</div>
+            <div class="todo-action-detail" id="todoModalDetail">
+                <!-- JS 动态渲染 -->
+            </div>
+            <div class="todo-action-btns" id="todoModalBtns">
+                <!-- JS 动态渲染 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 门店选择弹窗 -->
+    <div class="store-modal" id="storeModal" onclick="closeStoreModal(event)">
+        <div class="store-modal-content" onclick="event.stopPropagation()">
+            <div class="store-modal-header">
+                <span class="store-modal-title">选择门店</span>
+                <span class="store-modal-close" onclick="closeStoreModal()">✕</span>
+            </div>
+            <div class="store-list" id="storeList">
+                <!-- 门店列表由 JS 生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 待办事项数据与逻辑 ==========
+        const todoItems = [
+            {
+                id: 1,
+                type: 'booking',
+                icon: '📅',
+                title: '预约待确认',
+                desc: '张教练-周日上午10:00团体课（B1号场）',
+                time: '1小时前',
+                urgent: false,
+                detail: {
+                    '预约编号': 'BK-20260316-008',
+                    '教练': '张教练',
+                    '课程类型': '团体课',
+                    '场地': 'B1号场',
+                    '时间': '周日 10:00 - 12:00',
+                    '人数': '8人'
+                }
+            },
+            {
+                id: 2,
+                type: 'booking',
+                icon: '📅',
+                title: '预约待确认',
+                desc: '李女士-周六下午14:00私教课（A2号场）',
+                time: '2小时前',
+                urgent: true,
+                detail: {
+                    '预约编号': 'BK-20260316-012',
+                    '会员': '李女士',
+                    '课程类型': '私教课',
+                    '场地': 'A2号场',
+                    '时间': '周六 14:00 - 15:30',
+                    '教练': '王教练'
+                }
+            },
+            {
+                id: 3,
+                type: 'booking',
+                icon: '📅',
+                title: '预约待确认',
+                desc: '陈先生-周日下午16:00场地预约（C1号场）',
+                time: '3小时前',
+                urgent: false,
+                detail: {
+                    '预约编号': 'BK-20260316-015',
+                    '会员': '陈先生',
+                    '预约类型': '场地租用',
+                    '场地': 'C1号场',
+                    '时间': '周日 16:00 - 18:00',
+                    '人数': '2人'
+                }
+            }
+        ];
+
+        let currentTodoFilter = 'all';
+
+        // 渲染待办列表
+        function renderTodoList(filter) {
+            const list = document.getElementById('todoList');
+            const badge = document.getElementById('todoBadge');
+            
+            const filtered = filter === 'all' 
+                ? todoItems.filter(item => !item.completed)
+                : todoItems.filter(item => item.type === filter && !item.completed);
+            
+            const pendingCount = todoItems.filter(item => !item.completed).length;
+            badge.textContent = pendingCount;
+            badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+            
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="todo-empty">
+                        <div class="todo-empty-icon">✅</div>
+                        <div class="todo-empty-text">${filter === 'all' ? '所有待办已处理完毕' : '该分类暂无待办事项'}</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            list.innerHTML = filtered.map(item => `
+                <div class="todo-item" data-id="${item.id}" data-type="${item.type}" onclick="openTodoAction(${item.id})">
+                    <div class="todo-item-icon ${item.type}">
+                        ${item.icon}
+                    </div>
+                    <div class="todo-item-content">
+                        <div class="todo-item-title">
+                            ${item.title}
+                            ${item.urgent ? '<span class="urgent-tag">紧急</span>' : '<span class="normal-tag">普通</span>'}
+                        </div>
+                        <div class="todo-item-desc">${item.desc}</div>
+                    </div>
+                    <div class="todo-item-right">
+                        <span class="todo-item-time">${item.time}</span>
+                        <button class="todo-item-btn process" onclick="event.stopPropagation(); openTodoAction(${item.id})">处理</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 筛选待办
+        function filterTodos(filter, el) {
+            currentTodoFilter = filter;
+            document.querySelectorAll('.todo-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            renderTodoList(filter);
+        }
+
+        // 打开处理弹窗
+        function openTodoAction(id) {
+            const item = todoItems.find(t => t.id === id);
+            if (!item) return;
+
+            const modal = document.getElementById('todoActionModal');
+            document.getElementById('todoModalTitle').textContent = item.title;
+            document.getElementById('todoModalSubtitle').textContent = item.desc;
+
+            // 渲染详情
+            const detailHtml = Object.entries(item.detail).map(([k, v]) => `
+                <div class="todo-action-detail-row">
+                    <span class="label">${k}</span>
+                    <span class="value">${v}</span>
+                </div>
+            `).join('');
+            document.getElementById('todoModalDetail').innerHTML = detailHtml;
+
+            // 渲染按钮
+            let btnsHtml = '';
+            if (item.type === 'refund') {
+                btnsHtml = `
+                    <button class="btn-reject" onclick="rejectTodo(${item.id})">拒绝退款</button>
+                    <button class="btn-confirm" onclick="completeTodo(${item.id})">同意退款</button>
+                `;
+            } else if (item.type === 'order' || item.type === 'booking') {
+                btnsHtml = `
+                    <button class="btn-cancel" onclick="closeTodoModal()">稍后处理</button>
+                    <button class="btn-confirm" onclick="completeTodo(${item.id})">确认处理</button>
+                `;
+            } else {
+                btnsHtml = `
+                    <button class="btn-cancel" onclick="closeTodoModal()">稍后处理</button>
+                    <button class="btn-confirm" onclick="completeTodo(${item.id})">审核通过</button>
+                `;
+            }
+            document.getElementById('todoModalBtns').innerHTML = btnsHtml;
+
+            modal.classList.add('active');
+        }
+
+        // 关闭处理弹窗
+        function closeTodoModal(event) {
+            if (!event || event.target.id === 'todoActionModal') {
+                document.getElementById('todoActionModal').classList.remove('active');
+            }
+        }
+
+        // 完成待办
+        function completeTodo(id) {
+            const item = todoItems.find(t => t.id === id);
+            if (item) {
+                item.completed = true;
+                closeTodoModal();
+                renderTodoList(currentTodoFilter);
+                showToast('✅ 已处理：' + item.title);
+            }
+        }
+
+        // 拒绝待办
+        function rejectTodo(id) {
+            const item = todoItems.find(t => t.id === id);
+            if (item) {
+                item.completed = true;
+                item.rejected = true;
+                closeTodoModal();
+                renderTodoList(currentTodoFilter);
+                showToast('已拒绝：' + item.title);
+            }
+        }
+
+        // 查看全部
+        function showAllTodos() {
+            // 切换到全部标签
+            filterTodos('all', document.querySelector('.todo-tab[data-filter="all"]'));
+            showToast('显示全部待办事项');
+        }
+
+        // 页面加载时渲染待办列表
+        document.addEventListener('DOMContentLoaded', function() {
+            renderTodoList('all');
+        });
+
+        // ========== 门店数据 ==========
+        // 图表实例（全局变量）
+        let chart = null;
+        
+        // 门店数据
+        const stores = [
+            { id: 1, name: '方格跳动（朝阳店）', address: '北京市朝阳区建国路88号', status: '营业中', hours: '8:00-22:00', icon: '🎾' },
+            { id: 2, name: '方格跳动（海淀店）', address: '北京市海淀区中关村大街1号', status: '营业中', hours: '8:00-22:00', icon: '🎾' },
+            { id: 3, name: '方格跳动（浦东店）', address: '上海市浦东新区陆家嘴环路1000号', status: '营业中', hours: '9:00-23:00', icon: '🎾' },
+            { id: 4, name: '方格跳动（南山店）', address: '深圳市南山区科技园南区', status: '休息中', hours: '8:00-22:00', icon: '🎾' }
+        ];
+        let currentStoreId = 1;
+
+        // 显示门店选择弹窗
+        function showStoreModal() {
+            const modal = document.getElementById('storeModal');
+            const list = document.getElementById('storeList');
+            
+            list.innerHTML = stores.map(store => `
+                <div class="store-item ${store.id === currentStoreId ? 'active' : ''}" onclick="selectStore(${store.id})">
+                    <div class="store-item-icon">${store.icon}</div>
+                    <div class="store-item-info">
+                        <div class="store-item-name">${store.name}</div>
+                        <div class="store-item-address">${store.address}</div>
+                    </div>
+                    ${store.id === currentStoreId ? '<span class="store-item-check">✓</span>' : ''}
+                </div>
+            `).join('');
+            
+            modal.classList.add('active');
+        }
+
+        // 关闭门店选择弹窗
+        function closeStoreModal(event) {
+            if (!event || event.target.id === 'storeModal') {
+                document.getElementById('storeModal').classList.remove('active');
+            }
+        }
+
+        // 选择门店
+        function selectStore(storeId) {
+            currentStoreId = storeId;
+            const store = stores.find(s => s.id === storeId);
+            
+            // 更新页面显示
+            document.getElementById('storeName').textContent = store.name;
+            document.getElementById('storeAddress').textContent = store.address;
+            
+            // 更新营业状态和样式
+            const statusBadge = document.getElementById('storeStatusBadge');
+            statusBadge.textContent = store.status;
+            statusBadge.className = 'store-status-badge ' + (store.status === '营业中' ? 'open' : 'closed');
+            document.getElementById('storeHours').textContent = store.hours + '营业';
+            
+            // 刷新数据（模拟）
+            refreshData();
+            
+            closeStoreModal();
+        }
+
+        // 生成日期
+        function generateDates(days = 30) {
+            const dates = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                dates.push(`${date.getMonth() + 1}/${date.getDate()}`);
+            }
+            return dates;
+        }
+
+        // 生成数据
+        function generateData(min, max, count = 30) {
+            return Array.from({length: count}, () => Math.floor(Math.random() * (max - min + 1)) + min);
+        }
+
+        // 初始化图表
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js 库加载失败');
+            document.getElementById('trendChart').parentElement.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">图表加载失败，请刷新页面重试</div>';
+        } else {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: generateDates(),
+                datasets: [
+                    {
+                        label: '订单量',
+                        data: generateData(80, 150),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: '订场数',
+                        data: generateData(20, 50),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (ctx) => ctx[0].label,
+                            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 7, font: { size: 10 } } },
+                    y: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10 } } }
+                },
+                onClick: (e, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        const date = chart.data.labels[idx];
+                        const orderVal = chart.data.datasets[0].data[idx];
+                        const bookVal = chart.data.datasets[1].data[idx];
+                        alert(`${date} 数据详情\n订单量: ${orderVal}\n订场数: ${bookVal}`);
+                    }
+                }
+            }
+        });
+        }
+        
+        // 刷新按鈕
+        // 刷新数据
+        function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            btn.classList.add('spinning');
+            setTimeout(() => {
+                btn.classList.remove('spinning');
+                document.getElementById('orderCount').textContent = Math.floor(Math.random() * 50) + 100;
+                document.getElementById('income').textContent = (Math.floor(Math.random() * 5000) + 10000).toLocaleString();
+                document.getElementById('updateTime').textContent = '数据更新时间：' + new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'});
+                if (chart) {
+                    chart.data.datasets[0].data = generateData(80, 150);
+                    chart.data.datasets[1].data = generateData(20, 50);
+                    chart.update();
+                }
+            }, 1000);
+        }
+
+        document.getElementById('refreshBtn').addEventListener('click', refreshData);
+
+        // 维度切换
+        document.querySelectorAll('.dim-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.dim-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const dim = this.dataset.dim;
+                const days = dim === 'day' ? 30 : dim === 'week' ? 12 : 12;
+                chart.data.labels = generateDates(days);
+                chart.data.datasets[0].data = generateData(80, 150, days);
+                chart.data.datasets[1].data = generateData(20, 50, days);
+                chart.update();
+            });
+        });
+
+        // Tab 切换
+        document.querySelectorAll('.tab-bar .tab-item').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const page = this.dataset.page;
+                
+                // 页面跳转（不更新样式，跳转后新页面会设置自己的active状态）
+                switch(page) {
+                    case 'home':
+                        // 已在小程序首页，刷新数据并提示
+                        showToast('已刷新首页数据');
+                        const refreshBtn = document.getElementById('refreshBtn');
+                        if (refreshBtn) {
+                            refreshBtn.classList.add('spinning');
+                            setTimeout(() => {
+                                refreshBtn.classList.remove('spinning');
+                            }, 1000);
+                        }
+                        break;
+                    case 'order':
+                        // 跳转到订单页
+                        window.location.href = 'order-preview.html';
+                        break;
+                    case 'court':
+                        // 跳转到场地页
+                        window.location.href = 'court-preview.html';
+                        break;
+                    case 'coupon':
+                        // 跳转到优惠券页
+                        window.location.href = 'coupon-preview.html';
+                        break;
+                    case 'profile':
+                        // 跳转到我的页面（暂未实现）
+                        showToast('我的页面开发中...');
+                        break;
+                }
+            });
+        });
+        
+        // 页面加载时确保所有tab项都可见
+        document.addEventListener('DOMContentLoaded', function() {
+            const allTabs = document.querySelectorAll('.tab-bar .tab-item');
+            allTabs.forEach(tab => {
+                tab.style.visibility = 'visible';
+                tab.style.opacity = '1';
+                tab.style.display = 'flex';
+            });
+            console.log('Tab count:', allTabs.length); // 应该输出 5
+        });
+        
+        // Toast 提示函数
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>

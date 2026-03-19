@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>发球机白名单 - 方格跳动</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        .mobile-frame {
+            max-width: 414px; margin: 0 auto; background: #f5f5f5;
+            min-height: 100vh; position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* 顶部导航 */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            padding: 16px; padding-top: 44px;
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .header-back {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 20px; cursor: pointer; border-radius: 8px;
+        }
+        .header-back:active { background: rgba(255,255,255,0.15); }
+        .header-title { font-size: 18px; font-weight: 600; color: #fff; }
+        .header-action {
+            padding: 6px 14px; background: rgba(255,255,255,0.2);
+            border-radius: 16px; color: #fff; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .header-action:active { background: rgba(255,255,255,0.35); transform: scale(0.96); }
+
+        /* 搜索栏 */
+        .search-bar {
+            background: #fff; padding: 12px 16px;
+            display: flex; gap: 10px; align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .search-input-wrap {
+            flex: 1; height: 40px; background: #f3f4f6;
+            border: 1px solid #e5e7eb; border-radius: 8px;
+            display: flex; align-items: center; padding: 0 12px; gap: 8px;
+        }
+        .search-input-wrap .search-icon { font-size: 16px; color: #9ca3af; flex-shrink: 0; }
+        .search-input-wrap input {
+            flex: 1; border: none; background: none; outline: none;
+            font-size: 14px; color: #1f2937;
+        }
+        .search-input-wrap input::placeholder { color: #9ca3af; }
+        .search-btn {
+            width: 72px; height: 40px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border: none; border-radius: 8px; color: #fff; font-size: 14px;
+            font-weight: 500; cursor: pointer; flex-shrink: 0;
+        }
+        .search-btn:active { opacity: 0.9; transform: scale(0.97); }
+
+        /* 统计栏 */
+        .stats-bar {
+            background: #fff; padding: 10px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #f3f4f6; font-size: 13px; color: #6b7280;
+        }
+        .stats-bar .count { color: #1e3a5f; font-weight: 600; }
+
+        /* 列表 */
+        .list-content { padding: 12px 16px; padding-bottom: 100px; }
+
+        /* 卡片 */
+        .access-card {
+            background: #fff; border-radius: 12px; margin-bottom: 12px;
+            overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+        }
+        .access-card:active { transform: scale(0.99); }
+        .access-card-header {
+            display: flex; align-items: center; padding: 14px 16px 0; gap: 10px;
+        }
+        .access-type-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
+        }
+        .access-type-icon.member { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+        .access-type-icon.phone { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+        .access-type-icon.coach { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+        .access-type-icon.admin { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+        .access-type-icon.maintain { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); }
+
+        .access-card-info { flex: 1; min-width: 0; }
+        .access-card-name {
+            font-size: 15px; font-weight: 600; color: #1f2937;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .access-card-phone { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+        .status-tag {
+            display: inline-flex; align-items: center;
+            padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 500;
+        }
+        .status-active { background: #d1fae5; color: #059669; }
+        .status-disabled { background: #fee2e2; color: #dc2626; }
+
+        .access-card-body { padding: 10px 16px 14px; }
+        .access-card-tags {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;
+        }
+        .info-tag {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 3px 8px; border-radius: 6px;
+            font-size: 11px; font-weight: 500;
+        }
+        .info-tag.court { background: #fef3c7; color: #92400e; }
+        .info-tag.perm { background: #ede9fe; color: #6d28d9; }
+        .info-tag.store { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+
+        .access-card-meta {
+            display: flex; flex-wrap: wrap; gap: 6px 16px;
+            font-size: 12px; color: #9ca3af;
+        }
+        .access-card-meta .meta-item { display: flex; align-items: center; gap: 4px; }
+        .access-card-meta .meta-icon { font-size: 13px; }
+
+        .access-card-remark {
+            margin-top: 8px; padding: 8px 12px;
+            background: #f9fafb; border-radius: 6px;
+            font-size: 12px; color: #6b7280; line-height: 1.5;
+        }
+
+        .access-card-footer {
+            display: flex; justify-content: flex-end; gap: 8px;
+            padding: 10px 16px; border-top: 1px solid #f3f4f6; background: #fafafa;
+        }
+        .card-btn {
+            padding: 6px 16px; border-radius: 16px; font-size: 12px;
+            font-weight: 500; cursor: pointer; border: none; transition: all 0.2s;
+        }
+        .card-btn:active { transform: scale(0.95); }
+        .card-btn.edit {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            color: #1e40af; border: 1px solid #93c5fd;
+        }
+        .card-btn.disable { background: #fff; color: #dc2626; border: 1px solid #fecaca; }
+        .card-btn.enable {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #059669; border: 1px solid #6ee7b7;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 60px 20px; text-align: center;
+        }
+        .empty-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-text { font-size: 15px; color: #6b7280; margin-bottom: 8px; }
+        .empty-subtext { font-size: 13px; color: #9ca3af; }
+
+        /* 底部导航 */
+        .tab-bar {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 414px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); z-index: 100;
+        }
+        .tab-bar-left, .tab-bar-right {
+            display: flex; flex: 1; justify-content: space-around; min-width: 0;
+        }
+        .tab-item {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 6px 12px; cursor: pointer; border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-decoration: none;
+        }
+        .tab-item:active { transform: scale(0.95); background: rgba(59, 130, 246, 0.08); }
+        .tab-item.active { background: rgba(59, 130, 246, 0.1); }
+        .tab-item.active .tab-icon, .tab-item.active .tab-label { color: #1e3a5f; font-weight: 600; }
+        .tab-icon { font-size: 20px; margin-bottom: 3px; color: #94a3b8; transition: all 0.3s ease; }
+        .tab-label { font-size: 10px; color: #94a3b8; transition: all 0.3s ease; font-weight: 500; }
+        .tab-item-center { position: relative; padding: 0; margin: 0 8px; }
+        .tab-item-center .center-icon-wrapper {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(30, 58, 95, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2);
+            margin-bottom: 4px; border: 3px solid #fff;
+        }
+        .tab-item-center:active .center-icon-wrapper { transform: scale(0.92); }
+        .tab-item-center .tab-icon { font-size: 24px; color: #ffffff; margin-bottom: 0; }
+        .tab-item-center .tab-label { font-size: 11px; color: #1e3a5f; font-weight: 600; }
+
+        /* 弹窗 */
+        .modal-overlay {
+            display: none; position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 2000;
+            justify-content: center; align-items: flex-end;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #fff; width: 100%; max-width: 414px;
+            border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 20px 16px; border-bottom: 1px solid #f3f4f6;
+            position: sticky; top: 0; background: #fff; z-index: 1;
+        }
+        .modal-title { font-size: 17px; font-weight: 600; color: #1f2937; }
+        .modal-close { font-size: 22px; color: #9ca3af; cursor: pointer; padding: 4px; }
+        .modal-close:active { color: #6b7280; }
+        .modal-body { padding: 16px 20px; }
+
+        /* 表单 */
+        .form-item { margin-bottom: 18px; }
+        .form-label {
+            font-size: 14px; font-weight: 500; color: #374151;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 2px;
+        }
+        .form-label .required { color: #ef4444; }
+        .form-input {
+            width: 100%; height: 44px; background: #f9fafb;
+            border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 0 14px; font-size: 14px; color: #1f2937;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus { outline: none; border-color: #3b82f6; background: #fff; }
+        .form-input::placeholder { color: #9ca3af; }
+        .form-input.error { border-color: #ef4444; background: #fef2f2; }
+        .form-error { font-size: 12px; color: #ef4444; margin-top: 4px; display: none; }
+        .form-error.show { display: block; }
+
+        .form-select {
+            width: 100%; height: 44px; background: #f9fafb;
+            border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 0 14px; font-size: 14px; color: #1f2937;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center;
+        }
+        .form-select:focus { outline: none; border-color: #3b82f6; background-color: #fff; }
+        .form-select.error { border-color: #ef4444; background-color: #fef2f2; }
+
+        .form-textarea {
+            width: 100%; min-height: 80px; background: #f9fafb;
+            border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 12px 14px; font-size: 14px; color: #1f2937;
+            resize: vertical; font-family: inherit;
+        }
+        .form-textarea:focus { outline: none; border-color: #3b82f6; background: #fff; }
+        .form-textarea-count { text-align: right; font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+        .radio-group { display: flex; gap: 20px; margin-top: 4px; }
+        .radio-item {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 14px; color: #374151; cursor: pointer;
+        }
+        .radio-item input[type="radio"] { width: 18px; height: 18px; accent-color: #3b82f6; }
+        .radio-item .active-label { color: #3b82f6; font-weight: 500; }
+        .radio-item .disabled-label { color: #6b7280; }
+
+        .datetime-input {
+            width: 100%; height: 44px; background: #f9fafb;
+            border: 1px solid #e5e7eb; border-radius: 10px;
+            padding: 0 14px; font-size: 14px; color: #1f2937;
+        }
+        .datetime-input:focus { outline: none; border-color: #3b82f6; background: #fff; }
+
+        .modal-footer {
+            display: flex; gap: 12px; padding: 16px 20px;
+            border-top: 1px solid #f3f4f6;
+            position: sticky; bottom: 0; background: #fff;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+        }
+        .modal-footer button {
+            flex: 1; height: 46px; border-radius: 12px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            border: none; transition: all 0.2s;
+        }
+        .modal-footer button:active { transform: scale(0.97); }
+        .btn-cancel { background: #f3f4f6; color: #6b7280; }
+        .btn-confirm { background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%); color: #fff; }
+        .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* 确认对话框 */
+        .confirm-overlay {
+            display: none; position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5); z-index: 3000;
+            justify-content: center; align-items: center;
+        }
+        .confirm-overlay.active { display: flex; }
+        .confirm-box {
+            background: #fff; width: 300px; border-radius: 16px;
+            padding: 28px 24px 20px; text-align: center;
+            animation: confirmIn 0.25s ease;
+        }
+        @keyframes confirmIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .confirm-icon { font-size: 40px; margin-bottom: 12px; }
+        .confirm-title { font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 8px; }
+        .confirm-msg { font-size: 13px; color: #6b7280; line-height: 1.5; margin-bottom: 20px; }
+        .confirm-btns { display: flex; gap: 12px; }
+        .confirm-btns button {
+            flex: 1; height: 42px; border-radius: 10px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            border: none; transition: all 0.2s;
+        }
+        .confirm-btns button:active { transform: scale(0.97); }
+        .confirm-btns .btn-cancel-sm { background: #f3f4f6; color: #6b7280; }
+        .confirm-btns .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+        .confirm-btns .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.75); color: #fff;
+            padding: 12px 24px; border-radius: 8px;
+            font-size: 14px; z-index: 10000;
+            display: none; backdrop-filter: blur(4px);
+        }
+        .toast.show { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -40%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    </style>
+</head>
+<body>
+    <div class="mobile-frame">
+        <div class="header">
+            <div class="header-back" onclick="goBack()">‹</div>
+            <span class="header-title">发球机白名单</span>
+            <div class="header-action" onclick="openAddModal()">+ 新增</div>
+        </div>
+
+        <div class="search-bar">
+            <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="tel" id="searchPhone" placeholder="输入手机号搜索" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')">
+            </div>
+            <button class="search-btn" onclick="searchList()">搜索</button>
+        </div>
+
+        <div class="stats-bar">
+            <span>本店发球机白名单（<span class="count" id="totalCount">0</span>条）</span>
+            <span>有效 <span class="count" id="activeCount">0</span> / 禁用 <span class="count" id="disabledCount">0</span></span>
+        </div>
+
+        <div class="list-content" id="listContent"></div>
+
+        <div class="tab-bar">
+            <div class="tab-bar-left">
+                <a href="order-preview.html" class="tab-item"><span class="tab-icon">📋</span><span class="tab-label">订单</span></a>
+                <a href="court-preview.html" class="tab-item"><span class="tab-icon">🏟️</span><span class="tab-label">场地</span></a>
+            </div>
+            <a href="preview.html" class="tab-item tab-item-center">
+                <div class="center-icon-wrapper"><span class="tab-icon">🏠</span></div>
+                <span class="tab-label">首页</span>
+            </a>
+            <div class="tab-bar-right">
+                <a href="coupon-preview.html" class="tab-item"><span class="tab-icon">🎫</span><span class="tab-label">优惠券</span></a>
+                <a href="profile-preview.html" class="tab-item"><span class="tab-icon">👤</span><span class="tab-label">我的</span></a>
+            </div>
+        </div>
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- 新增/编辑弹窗 -->
+    <div class="modal-overlay" id="formModal" onclick="closeFormModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <span class="modal-title" id="formModalTitle">新增发球机白名单</span>
+                <span class="modal-close" onclick="closeFormModal()">✕</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">门店名称</label>
+                    <div style="padding: 10px 14px; background: #f3f4f6; border-radius: 12px; font-size: 14px; color: #6b7280;">方格跳动（朝阳店）</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label"><span class="required">*</span> 白名单类型</div>
+                    <select class="form-select" id="formType">
+                        <option value="">请选择类型</option>
+                        <option value="1">会员用户</option>
+                        <option value="2">手机号</option>
+                        <option value="3">教练</option>
+                        <option value="4">管理员</option>
+                        <option value="5">维护人员</option>
+                    </select>
+                    <div class="form-error" id="errType">请选择白名单类型</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label"><span class="required">*</span> 手机号</div>
+                    <input class="form-input" type="tel" id="formPhone" placeholder="请输入手机号" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')">
+                    <div class="form-error" id="errPhone">请输入正确的手机号</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label"><span class="required">*</span> 控制权限范围</div>
+                    <select class="form-select" id="formPermission">
+                        <option value="">请选择权限范围</option>
+                        <option value="1">仅开关机</option>
+                        <option value="2">调整发球参数</option>
+                        <option value="3">全权限</option>
+                    </select>
+                    <div class="form-error" id="errPermission">请选择控制权限范围</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label"><span class="required">*</span> 场地</div>
+                    <select class="form-select" id="formCourt">
+                        <option value="">请选择场地</option>
+                        <option value="1号赛道">1号赛道</option>
+                        <option value="2号赛道">2号赛道</option>
+                        <option value="3号赛道">3号赛道</option>
+                        <option value="4号赛道">4号赛道</option>
+                        <option value="5号赛道">5号赛道</option>
+                        <option value="6号赛道">6号赛道</option>
+                    </select>
+                    <div class="form-error" id="errCourt">请选择场地</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label"><span class="required">*</span> 生效时间</div>
+                    <input class="datetime-input" type="datetime-local" id="formStartTime">
+                    <div class="form-error" id="errStart">请选择生效时间</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label"><span class="required">*</span> 失效时间</div>
+                    <input class="datetime-input" type="datetime-local" id="formEndTime">
+                    <div class="form-error" id="errEnd">请选择失效时间</div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label"><span class="required">*</span> 状态</div>
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="formStatus" value="1" checked>
+                            <span class="active-label">有效</span>
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="formStatus" value="0">
+                            <span class="disabled-label">禁用</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-item">
+                    <div class="form-label">备注</div>
+                    <textarea class="form-textarea" id="formRemark" placeholder="请输入备注信息（选填）" maxlength="500" oninput="updateRemarkCount()"></textarea>
+                    <div class="form-textarea-count"><span id="remarkCount">0</span>/500</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeFormModal()">取消</button>
+                <button class="btn-confirm" onclick="submitForm()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div class="confirm-overlay" id="confirmOverlay" onclick="closeConfirm(event)">
+        <div class="confirm-box" onclick="event.stopPropagation()">
+            <div class="confirm-icon" id="confirmIcon">⚠️</div>
+            <div class="confirm-title" id="confirmTitle">确认操作</div>
+            <div class="confirm-msg" id="confirmMsg">确定要执行此操作吗？</div>
+            <div class="confirm-btns" id="confirmBtns"></div>
+        </div>
+    </div>
+
+    <script>
+        const typeMap = {
+            1: { name: '会员用户', icon: '👤', cls: 'member' },
+            2: { name: '手机号', icon: '📱', cls: 'phone' },
+            3: { name: '教练', icon: '🏋️', cls: 'coach' },
+            4: { name: '管理员', icon: '👩‍💼', cls: 'admin' },
+            5: { name: '维护人员', icon: '🔧', cls: 'maintain' }
+        };
+
+        const permMap = {
+            1: '仅开关机',
+            2: '调整发球参数',
+            3: '全权限'
+        };
+
+        let machineList = [
+            { id: 1, white_type: 4, phone: '13218179670', permission: 3, court: '1号赛道', store: '方格跳动（朝阳店）', start_time: '2026-03-09 00:00:00', end_time: '2026-03-31 00:00:00', status: 1, remark: '', created_at: '2026-03-09 10:00:00' },
+            { id: 2, white_type: 1, phone: '13774278057', permission: 3, court: '3号赛道', store: '方格跳动（朝阳店）', start_time: '2026-03-16 14:00:00', end_time: '2026-03-16 16:00:00', status: 1, remark: '会员王先生 下午训练使用发球机', created_at: '2026-03-15 18:00:00' },
+            { id: 3, white_type: 3, phone: '19946024890', permission: 3, court: '2号赛道', store: '方格跳动（朝阳店）', start_time: '2026-03-01 08:00:00', end_time: '2026-03-31 22:00:00', status: 1, remark: '任教练 3月教学用机权限', created_at: '2026-03-01 08:00:00' },
+            { id: 4, white_type: 1, phone: '15021883456', permission: 2, court: '4号赛道', store: '方格跳动（朝阳店）', start_time: '2026-03-14 10:00:00', end_time: '2026-03-14 12:00:00', status: 0, remark: '会员张先生 已取消', created_at: '2026-03-13 15:00:00' },
+            { id: 5, white_type: 2, phone: '13800138001', permission: 1, court: '1号赛道', store: '方格跳动（朝阳店）', start_time: '2026-03-15 16:00:00', end_time: '2026-03-15 18:00:00', status: 1, remark: '体验课学员', created_at: '2026-03-14 20:00:00' },
+            { id: 6, white_type: 5, phone: '18621009876', permission: 3, court: '5号赛道', store: '方格跳动（朝阳店）', start_time: '2026-03-16 09:00:00', end_time: '2026-03-16 17:00:00', status: 1, remark: '发球机维护保养 刘师傅', created_at: '2026-03-15 14:00:00' },
+            { id: 7, white_type: 1, phone: '15900882233', permission: 3, court: '6号赛道', store: '方格跳动（朝阳店）', start_time: '2026-03-17 08:00:00', end_time: '2026-03-17 10:00:00', status: 1, remark: '会员李女士 周日晨练', created_at: '2026-03-16 09:00:00' },
+        ];
+        let nextId = 8;
+        let editingId = null;
+
+        function renderList(data) {
+            const container = document.getElementById('listContent');
+            const activeCount = data.filter(i => i.status === 1).length;
+            const disabledCount = data.filter(i => i.status === 0).length;
+            document.getElementById('totalCount').textContent = data.length;
+            document.getElementById('activeCount').textContent = activeCount;
+            document.getElementById('disabledCount').textContent = disabledCount;
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-icon">🎾</div><div class="empty-text">暂无发球机白名单数据</div><div class="empty-subtext">点击右上角"+ 新增"添加白名单</div></div>';
+                return;
+            }
+
+            container.innerHTML = data.map(item => {
+                const t = typeMap[item.white_type] || typeMap[2];
+                const statusCls = item.status === 1 ? 'status-active' : 'status-disabled';
+                const statusText = item.status === 1 ? '有效' : '禁用';
+                const toggleBtnCls = item.status === 1 ? 'disable' : 'enable';
+                const toggleBtnText = item.status === 1 ? '停用' : '启用';
+                const permText = permMap[item.permission] || item.permission;
+
+                return '<div class="access-card">'
+                    + '<div class="access-card-header">'
+                    + '<div class="access-type-icon ' + t.cls + '">' + t.icon + '</div>'
+                    + '<div class="access-card-info">'
+                    + '<div class="access-card-name">' + t.name + ' <span class="status-tag ' + statusCls + '">' + statusText + '</span></div>'
+                    + '<div class="access-card-phone">' + item.phone + ' <span class="copy-btn" onclick="copyPhone(\'' + item.phone + '\', event)" style="font-size:11px;color:#3b82f6;background:#eff6ff;padding:2px 6px;border-radius:4px;cursor:pointer;margin-left:6px;">复制</span></div>'
+                    + '</div></div>'
+                    + '<div class="access-card-body">'
+                    + '<div class="access-card-tags">'
+                    + '<span class="info-tag store">🏪 ' + item.store + '</span>'
+                    + '<span class="info-tag court">🎾 ' + item.court + '</span>'
+                    + '<span class="info-tag perm">🔑 ' + permText + '</span>'
+                    + '</div>'
+                    + '<div class="access-card-meta">'
+                    + '<span class="meta-item"><span class="meta-icon">🕐</span> 生效：' + formatDateTime(item.start_time) + '</span>'
+                    + '<span class="meta-item"><span class="meta-icon">🕐</span> 失效：' + formatDateTime(item.end_time) + '</span>'
+                    + '</div>'
+                    + (item.remark ? '<div class="access-card-remark">' + item.remark + '</div>' : '')
+                    + '</div>'
+                    + '<div class="access-card-footer">'
+                    + '<button class="card-btn edit" onclick="openEditModal(' + item.id + ')">修改</button>'
+                    + '<button class="card-btn ' + toggleBtnCls + '" onclick="toggleStatus(' + item.id + ')">' + toggleBtnText + '</button>'
+                    + '</div></div>';
+            }).join('');
+        }
+
+        function formatDateTime(str) {
+            if (!str) return '--';
+            return str.replace(/:00$/, '').replace(/^(\d{4})-(\d{2})-(\d{2})/, '$1/$2/$3');
+        }
+
+        function searchList() {
+            const phone = document.getElementById('searchPhone').value.trim();
+            if (!phone) { renderList(machineList); return; }
+            const filtered = machineList.filter(i => i.phone.includes(phone));
+            renderList(filtered);
+            if (filtered.length === 0) showToast('未找到匹配的白名单');
+        }
+
+        function openAddModal() {
+            editingId = null;
+            document.getElementById('formModalTitle').textContent = '新增发球机白名单';
+            document.getElementById('formType').value = '';
+            document.getElementById('formPhone').value = '';
+            document.getElementById('formPermission').value = '';
+            document.getElementById('formCourt').value = '';
+            document.getElementById('formStartTime').value = '';
+            document.getElementById('formEndTime').value = '';
+            document.querySelector('input[name="formStatus"][value="1"]').checked = true;
+            document.getElementById('formRemark').value = '';
+            document.getElementById('remarkCount').textContent = '0';
+            clearAllErrors();
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        function openEditModal(id) {
+            const item = machineList.find(i => i.id === id);
+            if (!item) return;
+            editingId = id;
+            document.getElementById('formModalTitle').textContent = '修改发球机白名单';
+            document.getElementById('formType').value = item.white_type;
+            document.getElementById('formPhone').value = item.phone;
+            document.getElementById('formPermission').value = String(item.permission);
+            document.getElementById('formCourt').value = item.court;
+            document.getElementById('formStartTime').value = item.start_time.replace(' ', 'T').substring(0, 16);
+            document.getElementById('formEndTime').value = item.end_time.replace(' ', 'T').substring(0, 16);
+            document.querySelector('input[name="formStatus"][value="' + item.status + '"]').checked = true;
+            document.getElementById('formRemark').value = item.remark || '';
+            document.getElementById('remarkCount').textContent = (item.remark || '').length;
+            clearAllErrors();
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        function closeFormModal(event) {
+            if (!event || event.target.id === 'formModal') {
+                document.getElementById('formModal').classList.remove('active');
+            }
+        }
+
+        function validateForm() {
+            let valid = true;
+            clearAllErrors();
+            const type = document.getElementById('formType').value;
+            const phone = document.getElementById('formPhone').value.trim();
+            const permission = document.getElementById('formPermission').value;
+            const court = document.getElementById('formCourt').value;
+            const start = document.getElementById('formStartTime').value;
+            const end = document.getElementById('formEndTime').value;
+
+            if (!type) { showError('errType', 'formType'); valid = false; }
+            if (!phone || !/^1[3-9]\d{9}$/.test(phone)) { showError('errPhone', 'formPhone'); valid = false; }
+            if (!permission) { showError('errPermission', 'formPermission'); valid = false; }
+            if (!court) { showError('errCourt', 'formCourt'); valid = false; }
+            if (!start) { showError('errStart'); valid = false; }
+            if (!end) {
+                document.getElementById('errEnd').textContent = '请选择失效时间';
+                showError('errEnd'); valid = false;
+            } else if (start && new Date(end) <= new Date(start)) {
+                document.getElementById('errEnd').textContent = '失效时间必须晚于生效时间';
+                showError('errEnd'); valid = false;
+            }
+            return valid;
+        }
+
+        function showError(errId, inputId) {
+            document.getElementById(errId).classList.add('show');
+            if (inputId) document.getElementById(inputId).classList.add('error');
+        }
+
+        function clearAllErrors() {
+            document.querySelectorAll('.form-error').forEach(e => e.classList.remove('show'));
+            document.querySelectorAll('.form-input, .form-select').forEach(e => e.classList.remove('error'));
+        }
+
+        function updateRemarkCount() {
+            document.getElementById('remarkCount').textContent = document.getElementById('formRemark').value.length;
+        }
+
+        function submitForm() {
+            if (!validateForm()) return;
+            const type = parseInt(document.getElementById('formType').value);
+            const phone = document.getElementById('formPhone').value.trim();
+            const permission = parseInt(document.getElementById('formPermission').value);
+            const court = document.getElementById('formCourt').value;
+            const start = document.getElementById('formStartTime').value.replace('T', ' ') + ':00';
+            const end = document.getElementById('formEndTime').value.replace('T', ' ') + ':00';
+            const status = parseInt(document.querySelector('input[name="formStatus"]:checked').value);
+            const remark = document.getElementById('formRemark').value.trim();
+
+            if (editingId) {
+                const item = machineList.find(i => i.id === editingId);
+                if (item) {
+                    item.white_type = type; item.phone = phone;
+                    item.permission = permission; item.court = court;
+                    item.start_time = start; item.end_time = end;
+                    item.status = status; item.remark = remark;
+                }
+                closeFormModal();
+                renderList(machineList);
+                showToast('✅ 修改成功');
+            } else {
+                machineList.unshift({
+                    id: nextId++, white_type: type, phone: phone,
+                    permission: permission, court: court,
+                    start_time: start, end_time: end,
+                    status: status, remark: remark,
+                    created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
+                });
+                closeFormModal();
+                renderList(machineList);
+                showToast('✅ 新增成功');
+            }
+        }
+
+        function toggleStatus(id) {
+            const item = machineList.find(i => i.id === id);
+            if (!item) return;
+            const isDisabling = item.status === 1;
+            const icon = isDisabling ? '⚠️' : '✅';
+            const title = isDisabling ? '确认停用' : '确认启用';
+            const msg = isDisabling
+                ? '停用后该手机号 <b>' + item.phone + '</b> 将无法使用 <b>' + item.court + '</b> 发球机，确认停用？'
+                : '启用后该手机号 <b>' + item.phone + '</b> 将恢复 <b>' + item.court + '</b> 发球机使用权限，确认启用？';
+            const btnCls = isDisabling ? 'btn-danger' : 'btn-success';
+            const btnText = isDisabling ? '确认停用' : '确认启用';
+
+            document.getElementById('confirmIcon').textContent = icon;
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMsg').innerHTML = msg;
+            document.getElementById('confirmBtns').innerHTML =
+                '<button class="btn-cancel-sm" onclick="closeConfirm()">取消</button>'
+                + '<button class="' + btnCls + '" onclick="confirmToggle(' + id + ')">' + btnText + '</button>';
+            document.getElementById('confirmOverlay').classList.add('active');
+        }
+
+        function confirmToggle(id) {
+            const item = machineList.find(i => i.id === id);
+            if (item) {
+                const wasActive = item.status === 1;
+                item.status = wasActive ? 0 : 1;
+                closeConfirm();
+                renderList(machineList);
+                showToast(wasActive ? '已停用' : '已启用');
+            }
+        }
+
+        function closeConfirm(event) {
+            if (!event || event.target.id === 'confirmOverlay') {
+                document.getElementById('confirmOverlay').classList.remove('active');
+            }
+        }
+
+        function goBack() { window.location.href = 'profile-preview.html'; }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
+
+        // ========== 复制手机号 ==========
+        function copyPhone(phone, event) {
+            event && event.stopPropagation();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(phone).then(function() {
+                    showToast('已复制: ' + phone);
+                });
+            } else {
+                var input = document.createElement('input');
+                input.value = phone;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('已复制: ' + phone);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderList(machineList);
+            document.getElementById('searchPhone').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') searchList();
+            });
+        });
+    </script>
+</body>
+</html>

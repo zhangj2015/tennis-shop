@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>优惠券管理 - 方格跳动</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        /* 模拟手机屏幕 */
+        .mobile-frame {
+            max-width: 414px;
+            margin: 0 auto;
+            background: #f5f5f5;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* 顶部导航 - ui-ux-pro-max 规范 */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            padding: 16px;
+            padding-top: 44px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            text-align: center;
+        }
+        .header-query-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 16px;
+            cursor: pointer;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+            transition: all 0.2s;
+        }
+        .header-query-btn:active {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-50%) scale(0.95);
+        }
+        
+        /* 筛选栏 - 与订单/预约页面保持一致 */
+        .filter-bar {
+            background: #fff;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .filter-row-primary {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+        }
+        .filter-row-secondary {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        .filter-input {
+            flex: 1;
+            min-width: 120px;
+            height: 40px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: #1f2937;
+        }
+        .filter-input::placeholder {
+            color: #9ca3af;
+        }
+        .filter-picker {
+            flex: 1;
+            min-width: 100px;
+            height: 40px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .filter-picker span:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .filter-picker .arrow {
+            font-size: 12px;
+            color: #9ca3af;
+            flex-shrink: 0;
+            margin-left: 4px;
+        }
+        .search-btn {
+            width: 80px;
+            height: 40px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .search-btn:active {
+            opacity: 0.9;
+            transform: scale(0.98);
+        }
+        
+        /* 响应式适配 */
+        @media screen and (max-width: 375px) {
+            .filter-row-secondary {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-row-secondary .filter-picker {
+                width: 100%;
+            }
+        }
+        
+        /* 优惠券列表 */
+        .coupon-list {
+            padding: 12px 16px;
+            padding-bottom: 100px;
+        }
+        .coupon-card {
+            background: #fff;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+        }
+        .coupon-card:active {
+            transform: scale(0.98);
+        }
+        .coupon-header {
+            display: flex;
+            padding: 16px;
+            background: linear-gradient(135deg, #e8f4fc 0%, #d1e9f7 100%);
+            border-bottom: 1px dashed #bfdbfe;
+            position: relative;
+        }
+        .coupon-header::before,
+        .coupon-header::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #f5f5f5;
+            border-radius: 50%;
+            bottom: -8px;
+        }
+        .coupon-header::before {
+            left: -8px;
+        }
+        .coupon-header::after {
+            right: -8px;
+        }
+        .coupon-amount {
+            display: flex;
+            align-items: baseline;
+            color: #1e3a5f;
+        }
+        .coupon-amount .currency {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .coupon-amount .value {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .coupon-type-tag {
+            margin-left: 12px;
+            padding: 4px 10px;
+            background: rgba(30, 58, 95, 0.1);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #1e3a5f;
+            font-weight: 500;
+        }
+        .coupon-info {
+            flex: 1;
+            padding: 16px;
+        }
+        .coupon-code {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+            font-family: monospace;
+        }
+        .coupon-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .coupon-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .coupon-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .coupon-meta-item .icon {
+            font-size: 14px;
+        }
+        .coupon-scope {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+        .coupon-scope-label {
+            color: #9ca3af;
+            margin-right: 4px;
+        }
+        .coupon-validity {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f3f4f6;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .coupon-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #fafafa;
+            border-top: 1px solid #f3f4f6;
+        }
+        .coupon-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .coupon-stats .stat-value {
+            color: #1e3a5f;
+            font-weight: 600;
+        }
+        .btn-issue {
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-issue:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+        }
+        .btn-issue:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+        
+        /* 状态标签 */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+        .status-active {
+            background: #d1fae5;
+            color: #059669;
+        }
+        .status-disabled {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        /* 日期类型标签 */
+        .date-type-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            background: #dbeafe;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #3b82f6;
+            margin-left: 8px;
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .empty-text {
+            font-size: 15px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        .empty-subtext {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        
+        /* 底部导航 - ui-ux-pro-max 规范 (5个Tab：订单、预约、首页、优惠券、我的) */
+        .tab-bar {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 100%; max-width: 414px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-top: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 16px calc(6px + env(safe-area-inset-bottom));
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+        }
+        
+        /* 左侧和右侧容器 */
+        .tab-bar-left, .tab-bar-right {
+            display: flex; flex: 1; justify-content: space-around;
+            min-width: 0;
+        }
+        
+        /* 确保所有Tab项都可见 */
+        .tab-bar .tab-item {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+            flex-shrink: 0 !important;
+        }
+        
+        /* 普通导航项 */
+        .tab-item {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 6px 12px; cursor: pointer; border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tab-item:active {
+            transform: scale(0.95);
+            background: rgba(59, 130, 246, 0.08);
+        }
+        .tab-item.active {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        .tab-item.active .tab-icon, .tab-item.active .tab-label { 
+            color: #1e3a5f; font-weight: 600;
+        }
+        .tab-icon { font-size: 20px; margin-bottom: 3px; color: #94a3b8; transition: all 0.3s ease; }
+        .tab-label { font-size: 10px; color: #94a3b8; transition: all 0.3s ease; font-weight: 500; }
+        
+        /* 中间首页 - 突出显示 */
+        .tab-item-center {
+            position: relative; padding: 0; margin: 0 8px;
+        }
+        .tab-item-center .center-icon-wrapper {
+            width: 52px; height: 52px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(30, 58, 95, 0.3), 0 2px 8px rgba(59, 130, 246, 0.2);
+            margin-bottom: 4px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid #fff;
+        }
+        .tab-item-center:active .center-icon-wrapper {
+            transform: scale(0.92);
+            box-shadow: 0 2px 10px rgba(30, 58, 95, 0.25);
+        }
+        .tab-item-center .tab-icon {
+            font-size: 24px; color: #ffffff; margin-bottom: 0;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+        }
+        .tab-item-center .tab-label {
+            font-size: 11px; color: #1e3a5f; font-weight: 600;
+        }
+        .tab-item-center.active .tab-label { color: #1e3a5f; }
+        
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10000;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+        .toast.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        
+        /* 发券弹窗 */
+        .issue-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .issue-modal.active { display: flex; }
+        .issue-modal-content {
+            background: #fff;
+            width: 100%;
+            max-width: 414px;
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .issue-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .issue-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .issue-modal-close {
+            font-size: 24px;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        .issue-form-item {
+            margin-bottom: 16px;
+        }
+        .issue-form-label {
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .issue-form-input {
+            width: 100%;
+            height: 44px;
+            padding: 0 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .issue-form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .issue-form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .issue-form-actions .btn {
+            flex: 1;
+            height: 44px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .issue-form-actions .btn-primary {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            color: #fff;
+            border: none;
+        }
+        .issue-form-actions .btn-secondary {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #e5e7eb;
+        }
+        
+        /* 发券弹窗增强样式 - 紧凑版 */
+        .issue-form-label.required::before {
+            content: '*';
+            color: #ef4444;
+            margin-right: 4px;
+        }
+        
+        /* 已选优惠券信息展示 */
+        .selected-coupon-info {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+        .coupon-info-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .coupon-info-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .coupon-type-tag {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .coupon-validity {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        /* 紧凑表单项 */
+        .issue-form-item.compact {
+            margin-bottom: 12px;
+        }
+        .issue-form-item.compact .issue-form-label {
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+        
+        /* 手机号查询框 */
+        .phone-search-box {
+            display: flex;
+            gap: 8px;
+        }
+        .phone-search-box .issue-form-input {
+            flex: 1;
+            height: 40px;
+        }
+        .search-user-btn {
+            height: 40px;
+            padding: 0 16px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .search-user-btn:active {
+            opacity: 0.9;
+        }
+        
+        /* 用户信息卡片 - 紧凑版 */
+        .user-info-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .user-info-card .user-info-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .user-info-text {
+            flex: 1;
+        }
+        .user-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+        .user-phone {
+            font-size: 12px;
+            color: #6b7280;
+        }
+        
+        /* 单选按钮组 - 紧凑版 */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+        .radio-group.compact {
+            gap: 16px;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #374151;
+        }
+        .radio-item input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3b82f6;
+            cursor: pointer;
+        }
+        .radio-text {
+            color: #374151;
+            font-size: 13px;
+        }
+        
+        /* 自定义日期行 - 紧凑版 */
+        .custom-date-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .date-input-group {
+            flex: 1;
+        }
+        .date-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .date-input {
+            height: 36px !important;
+            padding: 0 10px !important;
+            font-size: 13px !important;
+        }
+        
+        /* 最终有效期展示 */
+        .final-validity-display {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .validity-label {
+            font-size: 13px;
+            color: #166534;
+            font-weight: 500;
+        }
+        .validity-value {
+            font-size: 13px;
+            color: #15803d;
+            font-weight: 600;
+        }
+        
+        /* 数字输入框 - 紧凑版 */
+        .number-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            width: fit-content;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .number-btn {
+            width: 36px;
+            height: 36px;
+            background: #f9fafb;
+            border: none;
+            font-size: 16px;
+            color: #374151;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .number-btn:active {
+            background: #e5e7eb;
+        }
+        .number-input-wrapper .number-input {
+            width: 50px;
+            height: 36px;
+            border: none;
+            border-left: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+            text-align: center;
+            padding: 0;
+            background: #fff;
+            font-size: 14px;
+        }
+        
+        /* Picker 弹窗 */
+        .picker-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1001;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .picker-modal.active { display: flex; }
+        .picker-content {
+            background: #fff;
+            width: 100%;
+            max-width: 414px;
+            border-radius: 20px 20px 0 0;
+            animation: slideUp 0.3s ease;
+        }
+        .picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .picker-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .picker-close {
+            font-size: 20px;
+            color: #9ca3af;
+            cursor: pointer;
+        }
+        .picker-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .picker-item {
+            padding: 16px 20px;
+            font-size: 15px;
+            color: #1f2937;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .picker-item:active {
+            background: #f9fafb;
+        }
+        .picker-item.selected {
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        .picker-item-check {
+            font-size: 18px;
+            color: #3b82f6;
+        }
+        
+        /* 优惠券包查询弹窗 */
+        .coupon-pack-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1002;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .coupon-pack-modal.active { display: flex; }
+        .coupon-pack-content {
+            background: #fff;
+            width: 100%;
+            max-width: 414px;
+            border-radius: 20px 20px 0 0;
+            animation: slideUp 0.3s ease;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .coupon-pack-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            flex-shrink: 0;
+        }
+        .coupon-pack-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .coupon-pack-close {
+            font-size: 22px;
+            color: #9ca3af;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .coupon-pack-close:active {
+            background: #f3f4f6;
+        }
+        .pack-search-area {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            flex-shrink: 0;
+        }
+        .pack-search-box {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .pack-search-input {
+            flex: 1;
+            height: 42px;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0 14px;
+            font-size: 14px;
+            color: #1f2937;
+            transition: all 0.2s;
+        }
+        .pack-search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .pack-search-input::placeholder {
+            color: #9ca3af;
+        }
+        .pack-search-btn {
+            height: 42px;
+            padding: 0 18px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .pack-search-btn:active {
+            opacity: 0.9;
+            transform: scale(0.97);
+        }
+        .pack-search-btn:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+        .pack-results-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .pack-user-overview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f3f4f6;
+            margin-bottom: 12px;
+        }
+        .pack-user-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .pack-user-info {
+            flex: 1;
+        }
+        .pack-user-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+        .pack-user-phone {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .pack-coupon-count {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .pack-result-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .pack-tab {
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            background: #f3f4f6;
+            color: #6b7280;
+            transition: all 0.2s;
+            border: none;
+        }
+        .pack-tab.active {
+            background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+            color: #fff;
+        }
+        .pack-tab:active {
+            transform: scale(0.95);
+        }
+        .pack-coupon-item {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .pack-coupon-item:active {
+            transform: scale(0.98);
+        }
+        .pack-coupon-top {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            gap: 12px;
+        }
+        .pack-coupon-face {
+            min-width: 64px;
+            height: 52px;
+            background: linear-gradient(135deg, #e8f4fc 0%, #d1e9f7 100%);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .pack-coupon-face .face-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e3a5f;
+            line-height: 1;
+        }
+        .pack-coupon-face .face-unit {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+        .pack-coupon-detail {
+            flex: 1;
+            min-width: 0;
+        }
+        .pack-coupon-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .pack-coupon-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+        .pack-tag {
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        .pack-tag-type {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+        .pack-tag-channel {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .pack-tag-scene {
+            background: #d1fae5;
+            color: #059669;
+        }
+        .pack-coupon-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 14px;
+            background: #fafafa;
+            border-top: 1px solid #f3f4f6;
+        }
+        .pack-validity {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        .pack-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .pack-status-unused {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+        .pack-status-used {
+            background: #f3f4f6;
+            color: #9ca3af;
+        }
+        .pack-status-expired {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        .pack-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 50px 20px;
+            text-align: center;
+        }
+        .pack-empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        .pack-empty-text {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .pack-empty-sub {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .pack-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 50px 20px;
+        }
+        .pack-loading-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .pack-loading-text {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .pack-initial-hint {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        .pack-hint-icon {
+            font-size: 52px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+        .pack-hint-text {
+            font-size: 14px;
+            color: #9ca3af;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-frame">
+        <!-- 顶部导航 -->
+        <div class="header">
+            <div class="header-inner">
+                <div class="header-title">优惠券管理</div>
+                <button class="header-query-btn" onclick="openCouponPackModal()">📦 券包查询</button>
+            </div>
+        </div>
+        
+        <!-- 筛选栏 - 与订单/预约页面保持一致 -->
+        <div class="filter-bar">
+            <!-- 主要查询区域 -->
+            <div class="filter-row-primary">
+                <input type="text" class="filter-input" id="couponName" placeholder="请输入优惠券名称">
+                <button class="search-btn" onclick="searchCoupons()">查询</button>
+            </div>
+            <!-- 次要筛选区域 -->
+            <div class="filter-row-secondary">
+                <div class="filter-picker" onclick="showTypePicker()">
+                    <span id="typeText">全部类型</span>
+                    <span class="arrow">▼</span>
+                </div>
+                <div class="filter-picker" onclick="showChannelPicker()">
+                    <span id="channelText">全部渠道</span>
+                    <span class="arrow">▼</span>
+                </div>
+                <div class="filter-picker" onclick="showScenePicker()">
+                    <span id="sceneText">全部场景</span>
+                    <span class="arrow">▼</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 优惠券列表 -->
+        <div class="coupon-list" id="couponList">
+            <!-- 优惠券卡片将通过 JS 动态生成 -->
+        </div>
+        
+        <!-- 底部导航 -->
+        <div class="tab-bar">
+            <div class="tab-bar-left">
+                <div class="tab-item" data-page="order">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-label">订单</span>
+                </div>
+                <div class="tab-item" data-page="court">
+                    <span class="tab-icon">🏟️</span>
+                    <span class="tab-label">场地</span>
+                </div>
+            </div>
+            <div class="tab-item tab-item-center" data-page="home">
+                <div class="center-icon-wrapper">
+                    <span class="tab-icon">🏠</span>
+                </div>
+                <span class="tab-label">首页</span>
+            </div>
+            <div class="tab-bar-right">
+                <a href="coupon-preview.html" class="tab-item active" data-page="coupon">
+                    <span class="tab-icon">🎫</span>
+                    <span class="tab-label">优惠券</span>
+                </a>
+                <a href="profile-preview.html" class="tab-item" data-page="profile">
+                    <span class="tab-icon">👤</span>
+                    <span class="tab-label">我的</span>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Toast 提示 -->
+        <div class="toast" id="toast"></div>
+        
+        <!-- Picker 弹窗 -->
+        <div class="picker-modal" id="pickerModal" onclick="closePickerModal(event)">
+            <div class="picker-content" onclick="event.stopPropagation()">
+                <div class="picker-header">
+                    <span class="picker-title" id="pickerTitle">选择</span>
+                    <span class="picker-close" onclick="closePickerModal()">✕</span>
+                </div>
+                <div class="picker-list" id="pickerList">
+                    <!-- 选项将通过 JS 动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- 发券弹窗 -->
+        <div class="issue-modal" id="issueModal" onclick="closeIssueModal(event)">
+            <div class="issue-modal-content" onclick="event.stopPropagation()">
+                <div class="issue-modal-header">
+                    <span class="issue-modal-title">给用户发券</span>
+                    <span class="issue-modal-close" onclick="closeIssueModal()">✕</span>
+                </div>
+                
+                <!-- 优惠券信息展示 -->
+                <div class="selected-coupon-info" id="selectedCouponInfo">
+                    <div class="coupon-info-name" id="issueCouponName">--</div>
+                    <div class="coupon-info-meta">
+                        <span class="coupon-type-tag" id="couponTypeTag">--</span>
+                        <span class="coupon-validity" id="couponValidity">--</span>
+                    </div>
+                </div>
+                
+                <div class="issue-form">
+                    <!-- 用户查询 -->
+                    <div class="issue-form-item compact">
+                        <label class="issue-form-label required">用户手机号</label>
+                        <div class="phone-search-box">
+                            <input type="tel" class="issue-form-input" id="issuePhone" placeholder="请输入手机号查询用户" maxlength="11">
+                            <button class="search-user-btn" onclick="searchUser()">查询</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 用户信息展示 -->
+                    <div class="user-info-card" id="userInfoCard" style="display: none;">
+                        <div class="user-info-main">
+                            <span class="user-avatar">👤</span>
+                            <div class="user-info-text">
+                                <div class="user-name" id="userName">--</div>
+                                <div class="user-phone" id="userPhoneDisplay">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 有效期设置 -->
+                    <div class="issue-form-item compact">
+                        <label class="issue-form-label required">有效期设置</label>
+                        <div class="radio-group compact">
+                            <label class="radio-item">
+                                <input type="radio" name="validityType" value="inherit" checked onchange="toggleValidityType()">
+                                <span class="radio-text">继承原券有效期</span>
+                            </label>
+                            <label class="radio-item">
+                                <input type="radio" name="validityType" value="custom" onchange="toggleValidityType()">
+                                <span class="radio-text">自定义</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 自定义日期 -->
+                    <div class="custom-date-row" id="customDateRow" style="display: none;">
+                        <div class="date-input-group">
+                            <label class="date-label">开始日期</label>
+                            <input type="date" class="issue-form-input date-input" id="customStartDate">
+                        </div>
+                        <div class="date-input-group">
+                            <label class="date-label">结束日期</label>
+                            <input type="date" class="issue-form-input date-input" id="customEndDate">
+                        </div>
+                    </div>
+                    
+                    <!-- 最终有效期展示 -->
+                    <div class="final-validity-display" id="finalValidityDisplay">
+                        <span class="validity-label">有效期:</span>
+                        <span class="validity-value" id="finalValidityValue">--</span>
+                    </div>
+                    
+                    <!-- 发券数量 -->
+                    <div class="issue-form-item compact">
+                        <label class="issue-form-label required">发券数量</label>
+                        <div class="number-input-wrapper">
+                            <button class="number-btn" onclick="adjustCount(-1)">−</button>
+                            <input type="number" class="issue-form-input number-input" id="issueCount" value="1" min="1" max="99" readonly>
+                            <button class="number-btn" onclick="adjustCount(1)">+</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 发放备注 -->
+                    <div class="issue-form-item compact">
+                        <label class="issue-form-label">发放备注</label>
+                        <input type="text" class="issue-form-input" id="issueRemark" placeholder="请输入发放备注（可选）">
+                    </div>
+                    
+                    <div class="issue-form-actions">
+                        <button class="btn btn-secondary" onclick="closeIssueModal()">取消</button>
+                        <button class="btn btn-primary" onclick="confirmIssue()">立即发放</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 优惠券包查询弹窗 -->
+        <div class="coupon-pack-modal" id="couponPackModal" onclick="closeCouponPackModal(event)">
+            <div class="coupon-pack-content" onclick="event.stopPropagation()">
+                <div class="coupon-pack-header">
+                    <span class="coupon-pack-title">📦 优惠券包查询</span>
+                    <span class="coupon-pack-close" onclick="closeCouponPackModal()">✕</span>
+                </div>
+                <div class="pack-search-area">
+                    <div class="pack-search-box">
+                        <input type="tel" class="pack-search-input" id="packPhoneInput" placeholder="请输入用户手机号" maxlength="11" onkeydown="if(event.key==='Enter')queryCouponPack()">
+                        <button class="pack-search-btn" id="packSearchBtn" onclick="queryCouponPack()">查询</button>
+                    </div>
+                </div>
+                <div class="pack-results-area" id="packResultsArea">
+                    <!-- 初始提示 -->
+                    <div class="pack-initial-hint" id="packInitialHint">
+                        <div class="pack-hint-icon">🔍</div>
+                        <div class="pack-hint-text">输入用户手机号<br>查询该用户的优惠券包</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 枚举定义
+        const COUPON_TYPE_ENUM = {
+            1: { code: 1, name: '满减券', value: 'full_reduction' },
+            2: { code: 2, name: '折扣券', value: 'discount' },
+            3: { code: 3, name: '代金券', value: 'voucher' },
+            4: { code: 4, name: '抵次券', value: 'deduction' }
+        };
+        
+        const CHANNEL_ENUM = {
+            1: { code: 1, name: '美团', value: 'meituan' },
+            2: { code: 2, name: '抖音', value: 'douyin' },
+            3: { code: 3, name: '快手', value: 'kuaishou' },
+            4: { code: 4, name: '高德', value: 'gaode' }
+        };
+        
+        const SCENE_ENUM = {
+            1: { code: 1, name: '场地预约', value: 'court' },
+            2: { code: 2, name: '私教预约', value: 'coach' },
+            3: { code: 3, name: '团课报名', value: 'group' }
+        };
+        
+        const DATE_TYPE_ENUM = {
+            1: { code: 1, name: '工作日', value: 'workday' },
+            2: { code: 2, name: '节假日', value: 'holiday' },
+            3: { code: 3, name: '不限制', value: 'unlimited' }
+        };
+        
+        // 模拟优惠券数据
+        const couponData = [
+            {
+                id: 1,
+                code: 'CP20260307133255A004',
+                name: '【女神节专属22-10点】室内网球30',
+                type: 4,
+                typeText: '抵次券',
+                amount: 30,
+                unit: '元',
+                channel: 2,
+                channelText: '抖音',
+                scene: 1,
+                sceneText: '场地预约',
+                dateType: 2,
+                dateTypeText: '节假日',
+                userLimit: 2,
+                scope: '仅限2026/3/7-2026/3/8使用22点-10点使用',
+                validity: '2026.03.02 - 2026.03.08',
+                useTime: '22:00-10:00',
+                total: 1000,
+                issued: 456,
+                used: 234,
+                status: 'active',
+                statusText: '启用中'
+            },
+            {
+                id: 2,
+                code: 'CP20260301094512A008',
+                name: '新用户专享满减券',
+                type: 1,
+                typeText: '满减券',
+                amount: 50,
+                unit: '元',
+                channel: 1,
+                channelText: '美团',
+                scene: 1,
+                sceneText: '场地预约',
+                dateType: 3,
+                dateTypeText: '不限制',
+                userLimit: 1,
+                scope: '满200元可用，全场场地预约通用',
+                validity: '2026.03.01 - 2026.03.31',
+                useTime: '全天可用',
+                total: 500,
+                issued: 328,
+                used: 156,
+                status: 'active',
+                statusText: '启用中'
+            },
+            {
+                id: 3,
+                code: 'CP20260305152133A012',
+                name: '周末团课8折优惠',
+                type: 2,
+                typeText: '折扣券',
+                amount: 8,
+                unit: '折',
+                channel: 2,
+                channelText: '抖音',
+                scene: 3,
+                sceneText: '团课报名',
+                dateType: 1,
+                dateTypeText: '工作日',
+                userLimit: 3,
+                scope: '仅限周末团课报名使用',
+                validity: '2026.03.01 - 2026.03.31',
+                useTime: '周末可用',
+                total: 200,
+                issued: 189,
+                used: 98,
+                status: 'active',
+                statusText: '启用中'
+            },
+            {
+                id: 4,
+                code: 'CP20260201110245A016',
+                name: '私教体验课代金券',
+                type: 3,
+                typeText: '代金券',
+                amount: 100,
+                unit: '元',
+                channel: 3,
+                channelText: '快手',
+                scene: 2,
+                sceneText: '私教预约',
+                dateType: 3,
+                dateTypeText: '不限制',
+                userLimit: 1,
+                scope: '私教课程预约抵扣，需提前预约',
+                validity: '2026.02.01 - 2026.02.28',
+                useTime: '需提前预约',
+                total: 100,
+                issued: 100,
+                used: 87,
+                status: 'disabled',
+                statusText: '停用'
+            },
+            {
+                id: 5,
+                code: 'CP20260120184522A020',
+                name: '春节特惠抵次券',
+                type: 4,
+                typeText: '抵次券',
+                amount: 50,
+                unit: '元',
+                channel: 4,
+                channelText: '高德',
+                scene: 1,
+                sceneText: '场地预约',
+                dateType: 2,
+                dateTypeText: '节假日',
+                userLimit: 5,
+                scope: '春节期间场地预约专享',
+                validity: '2026.01.20 - 2026.02.10',
+                useTime: '全天可用',
+                total: 800,
+                issued: 800,
+                used: 756,
+                status: 'disabled',
+                statusText: '停用'
+            }
+        ];
+        
+        let currentCoupons = [...couponData];
+        let currentIssueCoupon = null;
+        let currentPickerType = null;
+        let filterState = {
+            type: null,
+            channel: null,
+            scene: null
+        };
+        
+        // 渲染优惠券列表
+        function renderCoupons(coupons) {
+            const listEl = document.getElementById('couponList');
+            
+            if (coupons.length === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🎫</div>
+                        <div class="empty-text">暂无优惠券</div>
+                        <div class="empty-subtext">请调整筛选条件或稍后重试</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            listEl.innerHTML = coupons.map(coupon => {
+                const statusClass = coupon.status === 'active' ? 'status-active' : 'status-disabled';
+                const remaining = coupon.total - coupon.issued;
+                const canIssue = coupon.status === 'active' && remaining > 0;
+                
+                return `
+                    <div class="coupon-card">
+                        <div class="coupon-header">
+                            <div class="coupon-amount">
+                                <span class="currency">${coupon.unit === '折' ? '' : (coupon.unit === '次' ? '' : '¥')}</span>
+                                <span class="value">${coupon.amount}</span>
+                                <span class="currency">${coupon.unit === '折' ? '折' : (coupon.unit === '次' ? '次' : '')}</span>
+                            </div>
+                            <span class="coupon-type-tag">${coupon.typeText}</span>
+                            <span class="status-tag ${statusClass}">${coupon.statusText}</span>
+                        </div>
+                        <div class="coupon-info">
+                            <div class="coupon-code">${coupon.code}</div>
+                            <div class="coupon-name">${coupon.name}</div>
+                            <div class="coupon-meta">
+                                <div class="coupon-meta-item">
+                                    <span class="icon">📍</span>
+                                    <span>${coupon.sceneText}</span>
+                                </div>
+                                <div class="coupon-meta-item">
+                                    <span class="icon">📢</span>
+                                    <span>${coupon.channelText}</span>
+                                </div>
+                                <div class="coupon-meta-item">
+                                    <span class="icon">👤</span>
+                                    <span>限${coupon.userLimit}张/人</span>
+                                </div>
+                                <div class="coupon-meta-item">
+                                    <span class="icon">📅</span>
+                                    <span>${coupon.dateTypeText}</span>
+                                </div>
+                            </div>
+                            <div class="coupon-scope">
+                                <span class="coupon-scope-label">适用范围：</span>${coupon.scope}
+                            </div>
+                            <div class="coupon-validity">
+                                有效期：${coupon.validity} | ${coupon.useTime}
+                            </div>
+                        </div>
+                        <div class="coupon-footer">
+                            <div class="coupon-stats">
+                                <span>总量 <span class="stat-value">${coupon.total}</span></span>
+                                <span>已发 <span class="stat-value">${coupon.issued}</span></span>
+                                <span>已用 <span class="stat-value">${coupon.used}</span></span>
+                                <span>剩余 <span class="stat-value">${remaining}</span></span>
+                            </div>
+                            <button class="btn-issue" ${!canIssue ? 'disabled' : ''} onclick="openIssueModal(${coupon.id})">
+                                ${canIssue ? '发券' : '不可发放'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 筛选功能
+        function searchCoupons() {
+            const name = document.getElementById('couponName').value.toLowerCase();
+            
+            currentCoupons = couponData.filter(coupon => {
+                if (name && !coupon.name.toLowerCase().includes(name) && !coupon.code.toLowerCase().includes(name)) return false;
+                if (filterState.type && coupon.type !== filterState.type) return false;
+                if (filterState.channel && coupon.channel !== filterState.channel) return false;
+                if (filterState.scene && coupon.scene !== filterState.scene) return false;
+                return true;
+            });
+            
+            renderCoupons(currentCoupons);
+            showToast(`找到 ${currentCoupons.length} 张优惠券`);
+        }
+        
+        
+        // 显示类型选择器
+        function showTypePicker() {
+            currentPickerType = 'type';
+            document.getElementById('pickerTitle').textContent = '选择优惠券类型';
+            const list = document.getElementById('pickerList');
+            list.innerHTML = `
+                <div class="picker-item ${!filterState.type ? 'selected' : ''}" onclick="selectOption('type', null, '全部类型')">
+                    <span>全部类型</span>
+                    ${!filterState.type ? '<span class="picker-item-check">✓</span>' : ''}
+                </div>
+                ${Object.values(COUPON_TYPE_ENUM).map(type => `
+                    <div class="picker-item ${filterState.type === type.code ? 'selected' : ''}" onclick="selectOption('type', ${type.code}, '${type.name}')">
+                        <span>${type.name}</span>
+                        ${filterState.type === type.code ? '<span class="picker-item-check">✓</span>' : ''}
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('pickerModal').classList.add('active');
+        }
+        
+        // 显示渠道选择器
+        function showChannelPicker() {
+            currentPickerType = 'channel';
+            document.getElementById('pickerTitle').textContent = '选择团购渠道';
+            const list = document.getElementById('pickerList');
+            list.innerHTML = `
+                <div class="picker-item ${!filterState.channel ? 'selected' : ''}" onclick="selectOption('channel', null, '全部渠道')">
+                    <span>全部渠道</span>
+                    ${!filterState.channel ? '<span class="picker-item-check">✓</span>' : ''}
+                </div>
+                ${Object.values(CHANNEL_ENUM).map(channel => `
+                    <div class="picker-item ${filterState.channel === channel.code ? 'selected' : ''}" onclick="selectOption('channel', ${channel.code}, '${channel.name}')">
+                        <span>${channel.name}</span>
+                        ${filterState.channel === channel.code ? '<span class="picker-item-check">✓</span>' : ''}
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('pickerModal').classList.add('active');
+        }
+        
+        // 显示场景选择器
+        function showScenePicker() {
+            currentPickerType = 'scene';
+            document.getElementById('pickerTitle').textContent = '选择使用场景';
+            const list = document.getElementById('pickerList');
+            list.innerHTML = `
+                <div class="picker-item ${!filterState.scene ? 'selected' : ''}" onclick="selectOption('scene', null, '全部场景')">
+                    <span>全部场景</span>
+                    ${!filterState.scene ? '<span class="picker-item-check">✓</span>' : ''}
+                </div>
+                ${Object.values(SCENE_ENUM).map(scene => `
+                    <div class="picker-item ${filterState.scene === scene.code ? 'selected' : ''}" onclick="selectOption('scene', ${scene.code}, '${scene.name}')">
+                        <span>${scene.name}</span>
+                        ${filterState.scene === scene.code ? '<span class="picker-item-check">✓</span>' : ''}
+                    </div>
+                `).join('')}
+            `;
+            document.getElementById('pickerModal').classList.add('active');
+        }
+        
+        // 选择选项
+        function selectOption(type, value, text) {
+            filterState[type] = value;
+            const textMap = {
+                'type': 'typeText',
+                'channel': 'channelText',
+                'scene': 'sceneText'
+            };
+            document.getElementById(textMap[type]).textContent = text;
+            closePickerModal();
+        }
+        
+        // 关闭选择器
+        function closePickerModal(event) {
+            if (!event || event.target.id === 'pickerModal') {
+                document.getElementById('pickerModal').classList.remove('active');
+                currentPickerType = null;
+            }
+        }
+        
+        // 打开发券弹窗
+        function openIssueModal(couponId) {
+            const coupon = couponData.find(c => c.id === couponId);
+            if (!coupon) return;
+            
+            currentIssueCoupon = coupon;
+            
+            // 重置表单
+            resetIssueForm();
+            
+            // 设置优惠券信息
+            document.getElementById('issueCouponName').textContent = coupon.name;
+            document.getElementById('couponTypeTag').textContent = coupon.typeText;
+            document.getElementById('couponValidity').textContent = coupon.validity;
+            
+            // 设置最终有效期默认值
+            document.getElementById('finalValidityValue').textContent = coupon.validity;
+            
+            document.getElementById('issueModal').classList.add('active');
+        }
+        
+        // 重置发券表单
+        function resetIssueForm() {
+            document.getElementById('issuePhone').value = '';
+            document.getElementById('issueCount').value = 1;
+            document.getElementById('issueRemark').value = '';
+            document.getElementById('customStartDate').value = '';
+            document.getElementById('customEndDate').value = '';
+            document.getElementById('userInfoCard').style.display = 'none';
+            document.getElementById('customDateRow').style.display = 'none';
+            
+            // 重置有效期类型
+            document.querySelector('input[name="validityType"][value="inherit"]').checked = true;
+        }
+        
+        // 切换有效期类型
+        function toggleValidityType() {
+            const validityType = document.querySelector('input[name="validityType"]:checked').value;
+            const customDateRow = document.getElementById('customDateRow');
+            
+            if (validityType === 'custom') {
+                customDateRow.style.display = 'flex';
+                updateFinalValidity();
+            } else {
+                customDateRow.style.display = 'none';
+                // 恢复模板有效期
+                if (currentIssueCoupon) {
+                    document.getElementById('finalValidityValue').textContent = currentIssueCoupon.validity;
+                }
+            }
+        }
+        
+        // 更新最终有效期显示
+        function updateFinalValidity() {
+            const validityType = document.querySelector('input[name="validityType"]:checked').value;
+            
+            if (validityType === 'custom') {
+                const startDate = document.getElementById('customStartDate').value;
+                const endDate = document.getElementById('customEndDate').value;
+                
+                if (startDate && endDate) {
+                    document.getElementById('finalValidityValue').textContent = `${startDate} ~ ${endDate}`;
+                } else if (startDate || endDate) {
+                    document.getElementById('finalValidityValue').textContent = '请选择完整日期范围';
+                }
+            } else {
+                if (currentIssueCoupon) {
+                    document.getElementById('finalValidityValue').textContent = currentIssueCoupon.validity;
+                }
+            }
+        }
+        
+        // 监听日期变化
+        document.getElementById('customStartDate')?.addEventListener('change', updateFinalValidity);
+        document.getElementById('customEndDate')?.addEventListener('change', updateFinalValidity);
+        
+        // 查询用户
+        function searchUser() {
+            const phone = document.getElementById('issuePhone').value.trim();
+            
+            if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+                showToast('请输入正确的手机号');
+                return;
+            }
+            
+            // 模拟查询用户
+            const mockUser = {
+                name: '用户' + phone.slice(-4),
+                phone: phone
+            };
+            
+            // 显示用户信息
+            document.getElementById('userName').textContent = mockUser.name;
+            document.getElementById('userPhoneDisplay').textContent = mockUser.phone;
+            document.getElementById('userInfoCard').style.display = 'block';
+            
+            showToast('查询成功');
+        }
+        
+        // 调整发券数量
+        function adjustCount(delta) {
+            const input = document.getElementById('issueCount');
+            let value = parseInt(input.value) || 1;
+            value += delta;
+            
+            const min = parseInt(input.min) || 1;
+            const max = parseInt(input.max) || 99;
+            
+            if (value < min) value = min;
+            if (value > max) value = max;
+            
+            input.value = value;
+        }
+        
+        // 关闭发券弹窗
+        function closeIssueModal(event) {
+            if (!event || event.target.id === 'issueModal') {
+                document.getElementById('issueModal').classList.remove('active');
+                currentIssueCoupon = null;
+            }
+        }
+        
+        // 确认发券
+        function confirmIssue() {
+            const phone = document.getElementById('issuePhone').value.trim();
+            const count = parseInt(document.getElementById('issueCount').value);
+            const validityType = document.querySelector('input[name="validityType"]:checked').value;
+            
+            // 验证手机号
+            if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+                showToast('请输入正确的手机号');
+                return;
+            }
+            
+            // 验证用户是否已查询
+            if (document.getElementById('userInfoCard').style.display === 'none') {
+                showToast('请先查询用户');
+                return;
+            }
+            
+            // 验证数量
+            if (!count || count < 1) {
+                showToast('发放数量至少为1');
+                return;
+            }
+            
+            // 验证自定义日期
+            if (validityType === 'custom') {
+                const startDate = document.getElementById('customStartDate').value;
+                const endDate = document.getElementById('customEndDate').value;
+                
+                if (!startDate || !endDate) {
+                    showToast('请选择自定义有效期');
+                    return;
+                }
+                
+                if (new Date(startDate) > new Date(endDate)) {
+                    showToast('开始日期不能晚于结束日期');
+                    return;
+                }
+            }
+            
+            if (currentIssueCoupon) {
+                currentIssueCoupon.issued += count;
+                renderCoupons(currentCoupons);
+                closeIssueModal();
+                showToast(`成功发放 ${count} 张优惠券给用户 ${phone}`);
+            }
+        }
+        
+        // Toast 提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+        
+        // Tab 切换
+        document.querySelectorAll('.tab-bar .tab-item').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const page = this.dataset.page;
+                
+                switch(page) {
+                    case 'home':
+                        window.location.href = 'preview.html';
+                        break;
+                    case 'order':
+                        window.location.href = 'order-preview.html';
+                        break;
+                    case 'court':
+                        window.location.href = 'court-preview.html';
+                        break;
+                    case 'coupon':
+                        showToast('已在优惠券页面');
+                        break;
+                    case 'profile':
+                        showToast('我的页面开发中...');
+                        break;
+                }
+            });
+        });
+        
+        // 页面加载时渲染
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCoupons(currentCoupons);
+        });
+        
+        // ========== 优惠券包查询功能 ==========
+        
+        // 模拟用户优惠券包数据（根据手机号映射）
+        const userCouponPackData = {
+            '13800138000': {
+                name: '张三',
+                phone: '13800138000',
+                coupons: [
+                    { id: 101, name: '【女神节专属】室内网球30元券', type: '抵次券', channel: '抖音', scene: '场地预约', amount: 30, unit: '元', validity: '2026.03.02 - 2026.03.08', status: 'unused', statusText: '未使用', count: 2 },
+                    { id: 102, name: '新用户专享满减券', type: '满减券', channel: '美团', scene: '场地预约', amount: 50, unit: '元', validity: '2026.03.01 - 2026.03.31', status: 'used', statusText: '已使用', count: 1 },
+                    { id: 103, name: '私教体验课代金券', type: '代金券', channel: '快手', scene: '私教预约', amount: 100, unit: '元', validity: '2026.02.01 - 2026.02.28', status: 'expired', statusText: '已过期', count: 1 },
+                    { id: 104, name: '周末团课8折优惠', type: '折扣券', channel: '抖音', scene: '团课报名', amount: 8, unit: '折', validity: '2026.03.01 - 2026.03.31', status: 'unused', statusText: '未使用', count: 1 }
+                ]
+            },
+            '13900139001': {
+                name: '李四',
+                phone: '13900139001',
+                coupons: [
+                    { id: 201, name: '春节特惠抵次券', type: '抵次券', channel: '高德', scene: '场地预约', amount: 50, unit: '元', validity: '2026.01.20 - 2026.02.10', status: 'used', statusText: '已使用', count: 3 },
+                    { id: 202, name: '新用户专享满减券', type: '满减券', channel: '美团', scene: '场地预约', amount: 50, unit: '元', validity: '2026.03.01 - 2026.03.31', status: 'unused', statusText: '未使用', count: 1 }
+                ]
+            },
+            '13812345678': {
+                name: '王五',
+                phone: '13812345678',
+                coupons: [
+                    { id: 301, name: '教练预约满减券', type: '满减券', channel: '美团', scene: '私教预约', amount: 80, unit: '元', validity: '2026.03.01 - 2026.04.30', status: 'unused', statusText: '未使用', count: 2 },
+                    { id: 302, name: '场地预约折扣券', type: '折扣券', channel: '抖音', scene: '场地预约', amount: 9, unit: '折', validity: '2026.03.15 - 2026.04.15', status: 'unused', statusText: '未使用', count: 1 },
+                    { id: 303, name: '团课体验代金券', type: '代金券', channel: '快手', scene: '团课报名', amount: 60, unit: '元', validity: '2026.02.01 - 2026.03.01', status: 'expired', statusText: '已过期', count: 1 },
+                    { id: 304, name: '【女神节专属】室内网球30元券', type: '抵次券', channel: '抖音', scene: '场地预约', amount: 30, unit: '元', validity: '2026.03.02 - 2026.03.08', status: 'used', statusText: '已使用', count: 1 },
+                    { id: 305, name: '新春特惠全场85折', type: '折扣券', channel: '高德', scene: '场地预约', amount: 8.5, unit: '折', validity: '2026.01.15 - 2026.02.15', status: 'expired', statusText: '已过期', count: 1 }
+                ]
+            }
+        };
+        
+        let packFilterStatus = 'all'; // 当前筛选状态
+        let currentPackData = null;    // 当前查询到的数据
+        
+        // 打开优惠券包查询弹窗
+        function openCouponPackModal() {
+            document.getElementById('couponPackModal').classList.add('active');
+            // 重置状态
+            document.getElementById('packPhoneInput').value = '';
+            document.getElementById('packResultsArea').innerHTML = `
+                <div class="pack-initial-hint" id="packInitialHint">
+                    <div class="pack-hint-icon">🔍</div>
+                    <div class="pack-hint-text">输入用户手机号<br>查询该用户的优惠券包</div>
+                </div>
+            `;
+            packFilterStatus = 'all';
+            currentPackData = null;
+            // 自动聚焦
+            setTimeout(function() {
+                document.getElementById('packPhoneInput').focus();
+            }, 350);
+        }
+        
+        // 关闭优惠券包查询弹窗
+        function closeCouponPackModal(event) {
+            if (!event || event.target.id === 'couponPackModal') {
+                document.getElementById('couponPackModal').classList.remove('active');
+            }
+        }
+        
+        // 查询优惠券包
+        function queryCouponPack() {
+            var phone = document.getElementById('packPhoneInput').value.trim();
+            
+            // 验证手机号格式
+            if (!phone) {
+                showToast('请输入手机号');
+                return;
+            }
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showToast('请输入正确的11位手机号');
+                return;
+            }
+            
+            var resultsArea = document.getElementById('packResultsArea');
+            var searchBtn = document.getElementById('packSearchBtn');
+            
+            // 显示加载状态
+            searchBtn.disabled = true;
+            searchBtn.textContent = '查询中';
+            resultsArea.innerHTML = `
+                <div class="pack-loading">
+                    <div class="pack-loading-spinner"></div>
+                    <div class="pack-loading-text">正在查询优惠券包...</div>
+                </div>
+            `;
+            
+            // 模拟网络请求延迟
+            setTimeout(function() {
+                searchBtn.disabled = false;
+                searchBtn.textContent = '查询';
+                
+                var userData = userCouponPackData[phone];
+                
+                if (!userData) {
+                    // 未找到用户
+                    currentPackData = null;
+                    resultsArea.innerHTML = `
+                        <div class="pack-empty">
+                            <div class="pack-empty-icon">😔</div>
+                            <div class="pack-empty-text">未找到该用户的优惠券</div>
+                            <div class="pack-empty-sub">手机号 ${phone} 暂无优惠券记录</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // 保存当前数据
+                currentPackData = userData;
+                packFilterStatus = 'all';
+                
+                // 渲染结果
+                renderPackResults(userData);
+                
+            }, 800);
+        }
+        
+        // 渲染查询结果
+        function renderPackResults(userData) {
+            var coupons = userData.coupons;
+            var resultsArea = document.getElementById('packResultsArea');
+            
+            // 根据筛选状态过滤
+            var filteredCoupons = coupons;
+            if (packFilterStatus !== 'all') {
+                filteredCoupons = coupons.filter(function(c) { return c.status === packFilterStatus; });
+            }
+            
+            // 统计各状态数量
+            var unusedCount = coupons.filter(function(c) { return c.status === 'unused'; }).length;
+            var usedCount = coupons.filter(function(c) { return c.status === 'used'; }).length;
+            var expiredCount = coupons.filter(function(c) { return c.status === 'expired'; }).length;
+            var totalCount = coupons.length;
+            
+            var html = '';
+            
+            // 用户信息概览
+            html += '<div class="pack-user-overview">';
+            html += '    <div class="pack-user-avatar">👤</div>';
+            html += '    <div class="pack-user-info">';
+            html += '        <div class="pack-user-name">' + userData.name + '</div>';
+            html += '        <div class="pack-user-phone">' + userData.phone + '</div>';
+            html += '    </div>';
+            html += '    <div class="pack-coupon-count">共 ' + totalCount + ' 张券</div>';
+            html += '</div>';
+            
+            // 筛选标签
+            html += '<div class="pack-result-tabs">';
+            html += '    <button class="pack-tab ' + (packFilterStatus === 'all' ? 'active' : '') + '" onclick="filterPackCoupons(\'all\')">全部(' + totalCount + ')</button>';
+            html += '    <button class="pack-tab ' + (packFilterStatus === 'unused' ? 'active' : '') + '" onclick="filterPackCoupons(\'unused\')">未使用(' + unusedCount + ')</button>';
+            html += '    <button class="pack-tab ' + (packFilterStatus === 'used' ? 'active' : '') + '" onclick="filterPackCoupons(\'used\')">已使用(' + usedCount + ')</button>';
+            html += '    <button class="pack-tab ' + (packFilterStatus === 'expired' ? 'active' : '') + '" onclick="filterPackCoupons(\'expired\')">已过期(' + expiredCount + ')</button>';
+            html += '</div>';
+            
+            // 优惠券列表
+            if (filteredCoupons.length === 0) {
+                html += '<div class="pack-empty">';
+                html += '    <div class="pack-empty-icon">🎫</div>';
+                html += '    <div class="pack-empty-text">该状态下暂无优惠券</div>';
+                html += '</div>';
+            } else {
+                filteredCoupons.forEach(function(coupon) {
+                    var statusClass = 'pack-status-unused';
+                    if (coupon.status === 'used') statusClass = 'pack-status-used';
+                    if (coupon.status === 'expired') statusClass = 'pack-status-expired';
+                    
+                    var facePrefix = coupon.unit === '折' ? '' : (coupon.unit === '次' ? '' : '¥');
+                    var faceSuffix = coupon.unit === '折' ? '折' : (coupon.unit === '次' ? '次' : '');
+                    
+                    html += '<div class="pack-coupon-item">';
+                    html += '    <div class="pack-coupon-top">';
+                    html += '        <div class="pack-coupon-face">';
+                    html += '            <div class="face-amount">' + facePrefix + coupon.amount + '</div>';
+                    html += '            <div class="face-unit">' + (faceSuffix || '元') + '</div>';
+                    html += '        </div>';
+                    html += '        <div class="pack-coupon-detail">';
+                    html += '            <div class="pack-coupon-name">' + coupon.name + '</div>';
+                    html += '            <div class="pack-coupon-tags">';
+                    html += '                <span class="pack-tag pack-tag-type">' + coupon.type + '</span>';
+                    html += '                <span class="pack-tag pack-tag-channel">' + coupon.channel + '</span>';
+                    html += '                <span class="pack-tag pack-tag-scene">' + coupon.scene + '</span>';
+                    if (coupon.count > 1) {
+                        html += '            <span class="pack-tag" style="background:#fef3c7;color:#b45309;">×' + coupon.count + '</span>';
+                    }
+                    html += '            </div>';
+                    html += '        </div>';
+                    html += '    </div>';
+                    html += '    <div class="pack-coupon-bottom">';
+                    html += '        <span class="pack-validity">有效期：' + coupon.validity + '</span>';
+                    html += '        <span class="pack-status ' + statusClass + '">' + coupon.statusText + '</span>';
+                    html += '    </div>';
+                    html += '</div>';
+                });
+            }
+            
+            resultsArea.innerHTML = html;
+        }
+        
+        // 筛选优惠券包状态
+        function filterPackCoupons(status) {
+            packFilterStatus = status;
+            if (currentPackData) {
+                renderPackResults(currentPackData);
+            }
+        }
+    </script>
+</body>
+</html>
