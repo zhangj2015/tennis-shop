@@ -1746,12 +1746,11 @@
             '4': { text: '已完成', class: 'status-completed' }
         };
         
-        // 状态映射 - 教练预约（1-待确认 2-已确认 3-待支付 4-已支付 5-已取消 6-已完成）
+        // 状态映射 - 教练预约（1-待确认 3-待支付 4-已预约 5-已取消 6-已完成）
         const coachStatusMap = {
             '1': { text: '待确认', class: 'status-unpaid' },
-            '2': { text: '已确认', class: 'status-normal' },
             '3': { text: '待支付', class: 'status-unpaid' },
-            '4': { text: '已支付', class: 'status-normal' },
+            '4': { text: '已预约', class: 'status-booked' },
             '5': { text: '已取消', class: 'status-cancelled' },
             '6': { text: '已完成', class: 'status-completed' }
         };
@@ -1940,7 +1939,7 @@
             }
         ];
         
-        // 模拟数据 - 教练预约（状态：1-待确认 2-已确认 3-待支付 4-已支付 5-已取消 6-已完成）
+        // 模拟数据 - 教练预约（状态：1-待确认 3-待支付 4-已预约 5-已取消 6-已完成）
         const coachBookings = [
             {
                 id: '65',
@@ -2008,7 +2007,7 @@
                 endTime: '2026-02-08 13:00',
                 price: '330',
                 actualPrice: '0',
-                status: '2',  // 已确认（显示修改按钮）
+                status: '4',  // 已预约（显示修改按钮）
                 createTime: '2026-02-06 15:30:19',
                 store: '黄浦江畔方格跳动'
             },

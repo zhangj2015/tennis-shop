@@ -2490,15 +2490,15 @@
                     </div>
                 </div>
 
-                <!-- 教练订单示例2：已确认 - 显示修改按钮 -->
-                <div class="order-card" data-order-type="coach" data-status="2" data-lesson-type="双人团1V2">
+                <!-- 教练订单示例2：已预约 - 显示修改按钮 -->
+                <div class="order-card" data-order-type="coach" data-status="4" data-lesson-type="双人团1V2">
                     <div class="order-header">
                         <div class="order-type-icon coach">👨‍🏫</div>
                         <div class="order-info">
                             <span class="order-no">COA20240309002</span>
                             <span class="order-time">2024-03-09 14:30:00</span>
                         </div>
-                        <div class="order-status booked">已确认</div>
+                        <div class="order-status booked">已预约</div>
                     </div>
                     <div class="order-body">
                         <div class="info-row">
@@ -2644,7 +2644,7 @@
 
             <!-- 团课订单 -->
             <div class="order-list-content" id="groupList" style="display: none;">
-                <!-- 团课订单示例1：报名成功（参考PC端截图）- 满足取消条件：status=5(报名成功), payType=1(微信), 实付>0 -->
+                <!-- 团课订单示例1：已成团（参考PC端截图）- 满足取消条件：status=5(已成团), payType=1(微信), 实付>0 -->
                 <div class="order-card" data-order-type="group" data-status="5" data-pay-type="1"
                      data-course-no="C_20260303183817A001"
                      data-course-type="单节课"
@@ -2662,7 +2662,7 @@
                             <span class="order-no">TC20260306142350A002</span>
                             <span class="order-time">2026-03-06 14:23:50</span>
                         </div>
-                        <div class="order-status success">报名成功</div>
+                        <div class="order-status success">已成团</div>
                     </div>
                     <div class="order-body">
                         <div class="info-row">
@@ -3867,19 +3867,23 @@
 
         // 状态映射
         const statusMap = {
-            // 场地订单状态
+            // 场地订单状态（1-待支付 2-已预约 3-已取消 4-已完成）
             '待支付': { class: 'unpaid', icon: '⏳', desc: '订单待支付，请尽快完成支付' },
             '已预约': { class: 'booked', icon: '✓', desc: '订单已预约成功，请按时到场' },
             '已取消': { class: 'cancelled', icon: '✕', desc: '订单已取消' },
             '已完成': { class: 'completed', icon: '✓', desc: '订单已完成，感谢您的使用' },
-            // 教练订单状态
-            '待确认': { class: 'pending', icon: '⏳', desc: '订单待确认，请耐心等待' },
-            '已确认': { class: 'booked', icon: '✓', desc: '订单已确认，请按时到场' },
+            // 教练订单状态（1-待确认 3-待支付 4-已预约 5-已取消 6-已完成）
+            '待确认': { class: 'unpaid', icon: '⏳', desc: '订单待确认，请耐心等待' },
             '待支付': { class: 'unpaid', icon: '💰', desc: '订单待支付，请尽快完成支付' },
-            '已支付': { class: 'paid', icon: '✓', desc: '订单已支付，请按时到场' },
-            // 团课订单状态
+            '已预约': { class: 'booked', icon: '✓', desc: '订单已预约成功，请按时到场' },
+            '已取消': { class: 'cancelled', icon: '✕', desc: '订单已取消' },
+            '已完成': { class: 'completed', icon: '✓', desc: '订单已完成，感谢您的使用' },
+            // 团课订单状态（1-待支付 2-已报名 3-已取消 4-已完成 5-已成团 6-拼团失败）
+            '待支付': { class: 'unpaid', icon: '⏳', desc: '订单待支付，请尽快完成支付' },
             '已报名': { class: 'booked', icon: '✓', desc: '已报名成功，请按时上课' },
-            '报名成功': { class: 'success', icon: '🎉', desc: '拼团成功，课程已成团' },
+            '已取消': { class: 'cancelled', icon: '✕', desc: '订单已取消' },
+            '已完成': { class: 'completed', icon: '✓', desc: '订单已完成，感谢您的使用' },
+            '已成团': { class: 'success', icon: '🎉', desc: '拼团成功，课程已成团' },
             '拼团失败': { class: 'failed', icon: '✕', desc: '拼团失败，订单已取消' }
         };
 
@@ -4207,11 +4211,11 @@
             
             // 团课订单取消按钮显示条件：
             // 1. 已支付（status !== 1 且 payType 存在）
-            // 2. 订单状态为已报名(2)或报名成功(5)
+            // 2. 订单状态为已报名(2)或已成团(5)
             // 3. 实付金额 > 0
             // 4. 非后台下单（payType !== 5）
-            // 教练订单取消按钮显示条件：
-            // 只有状态为 1-待确认 或 2-已确认 时可以取消
+            // 教练订单取消按钮显示条件（最新标准：1-待确认 3-待支付 4-已预约 5-已取消 6-已完成）：
+            // 只有状态为 1-待确认 时可以取消
             let showCancelBtn = false;
             let showBookingBtn = false;
             
@@ -4222,10 +4226,10 @@
                 const hasPayment = groupFinalAmount > 0;
                 const isNotBackend = groupPayType !== 5;
                 showCancelBtn = isPaid && isValidStatus && hasPayment && isNotBackend;
-                showBookingBtn = isValidStatus; // 预约明细按钮在已报名/报名成功状态显示
+                showBookingBtn = isValidStatus; // 预约明细按钮在已报名/已成团状态显示
             } else if (isCoachOrder) {
-                // 教练订单逻辑：只有待确认(1)或已确认(2)状态显示取消按钮
-                showCancelBtn = orderStatus === 1 || orderStatus === 2;
+                // 教练订单逻辑（最新标准）：只有待确认(1)状态显示取消按钮
+                showCancelBtn = orderStatus === 1;
                 showBookingBtn = false; // 教练订单不显示预约明细按钮
             } else {
                 // 场地订单逻辑（保持原有逻辑）
@@ -4341,25 +4345,24 @@
             { label: '已完成', value: '4' }
         ];
 
-        // 教练订单筛选状态选项（1-待确认 2-已确认 3-待支付 4-已支付 5-已取消 6-已完成）
+        // 教练订单筛选状态选项（1-待确认 3-待支付 4-已预约 5-已取消 6-已完成）
         const coachStatusOptions = [
             { label: '全部', value: '' },
             { label: '待确认', value: '1' },
-            { label: '已确认', value: '2' },
             { label: '待支付', value: '3' },
-            { label: '已支付', value: '4' },
+            { label: '已预约', value: '4' },
             { label: '已取消', value: '5' },
             { label: '已完成', value: '6' }
         ];
 
-        // 团课订单筛选状态选项（1-待支付 2-已报名 3-已取消 4-已完成 5-报名成功 6-拼团失败）
+        // 团课订单筛选状态选项（1-待支付 2-已报名 3-已取消 4-已完成 5-已成团 6-拼团失败）
         const groupStatusOptions = [
             { label: '全部', value: '' },
             { label: '待支付', value: '1' },
             { label: '已报名', value: '2' },
             { label: '已取消', value: '3' },
             { label: '已完成', value: '4' },
-            { label: '报名成功', value: '5' },
+            { label: '已成团', value: '5' },
             { label: '拼团失败', value: '6' }
         ];
         
