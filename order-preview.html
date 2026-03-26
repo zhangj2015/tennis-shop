@@ -1387,6 +1387,12 @@
         .detail-status.refunded { background: #fee2e2; color: #ef4444; }
         .detail-status.completed { background: #d1fae5; color: #10b981; }
         
+        /* 支付状态样式 */
+        .status-badge.unpaid { background: #fef3c7; color: #d97706; }
+        .status-badge.completed { background: #d1fae5; color: #059669; }
+        .status-badge.cancelled { background: #f3f4f6; color: #6b7280; }
+        .status-badge.refunded { background: #e0e7ff; color: #4f46e5; }
+        
         .switch-mini-btn {
             padding: 6px 14px;
             background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
@@ -2225,7 +2231,7 @@
             <!-- 场地订单 -->
             <div class="order-list-content" id="venueList">
                 <!-- 已预约订单 (status=2) - 显示取消按钮 - 使用优惠券支付 -->
-                <div class="order-card" data-status="2">
+                <div class="order-card" data-status="2" data-pay-status="2">
                     <div class="order-header">
                         <div class="order-type-icon venue">🎾</div>
                         <div class="order-info">
@@ -2268,7 +2274,7 @@
                 </div>
 
                 <!-- 已完成订单 (status=4) - 不显示取消按钮 -->
-                <div class="order-card" data-status="4">
+                <div class="order-card" data-status="4" data-pay-status="2">
                     <div class="order-header">
                         <div class="order-type-icon venue">🎾</div>
                         <div class="order-info">
@@ -2310,7 +2316,7 @@
                 </div>
 
                 <!-- 已取消订单 (status=3) - 不显示取消按钮 -->
-                <div class="order-card" data-status="3">
+                <div class="order-card" data-status="3" data-pay-status="3">
                     <div class="order-header">
                         <div class="order-type-icon venue">🎾</div>
                         <div class="order-info">
@@ -2352,7 +2358,7 @@
                 </div>
 
                 <!-- 待支付订单 (status=1) - 不显示取消按钮 -->
-                <div class="order-card" data-status="1">
+                <div class="order-card" data-status="1" data-pay-status="1">
                     <div class="order-header">
                         <div class="order-type-icon venue">🎾</div>
                         <div class="order-info">
@@ -2394,7 +2400,7 @@
                 </div>
 
                 <!-- 团购核销订单 (status=2, payType=4) -->
-                <div class="order-card" data-status="2">
+                <div class="order-card" data-status="2" data-pay-status="2">
                     <div class="order-header">
                         <div class="order-type-icon venue">🎾</div>
                         <div class="order-info">
@@ -2440,7 +2446,7 @@
             <!-- 教练订单 -->
             <div class="order-list-content" id="coachList" style="display: none;">
                 <!-- 教练订单示例1：待确认 - 显示确认和修改按钮 -->
-                <div class="order-card" data-order-type="coach" data-status="1" data-lesson-type="普通私教1V1">
+                <div class="order-card" data-order-type="coach" data-status="1" data-pay-status="1" data-lesson-type="普通私教1V1">
                     <div class="order-header">
                         <div class="order-type-icon coach">👨‍🏫</div>
                         <div class="order-info">
@@ -2491,7 +2497,7 @@
                 </div>
 
                 <!-- 教练订单示例2：已预约 - 显示修改按钮 -->
-                <div class="order-card" data-order-type="coach" data-status="4" data-lesson-type="双人团1V2">
+                <div class="order-card" data-order-type="coach" data-status="4" data-pay-status="2" data-lesson-type="双人团1V2">
                     <div class="order-header">
                         <div class="order-type-icon coach">👨‍🏫</div>
                         <div class="order-info">
@@ -2542,7 +2548,7 @@
                 </div>
 
                 <!-- 教练订单示例3：待支付 - 显示修改按钮 -->
-                <div class="order-card" data-order-type="coach" data-status="3" data-lesson-type="普通私教1V1">
+                <div class="order-card" data-order-type="coach" data-status="3" data-pay-status="1" data-lesson-type="普通私教1V1">
                     <div class="order-header">
                         <div class="order-type-icon coach">👨‍🏫</div>
                         <div class="order-info">
@@ -2592,7 +2598,7 @@
                 </div>
 
                 <!-- 教练订单示例4：已完成 - 不显示操作按钮 -->
-                <div class="order-card" data-order-type="coach" data-status="6" data-lesson-type="双人团1V2">
+                <div class="order-card" data-order-type="coach" data-status="6" data-pay-status="2" data-lesson-type="双人团1V2">
                     <div class="order-header">
                         <div class="order-type-icon coach">👨‍🏫</div>
                         <div class="order-info">
@@ -2645,7 +2651,7 @@
             <!-- 团课订单 -->
             <div class="order-list-content" id="groupList" style="display: none;">
                 <!-- 团课订单示例1：已成团（参考PC端截图）- 满足取消条件：status=5(已成团), payType=1(微信), 实付>0 -->
-                <div class="order-card" data-order-type="group" data-status="5" data-pay-type="1"
+                <div class="order-card" data-order-type="group" data-status="5" data-pay-status="2" data-pay-type="1"
                      data-course-no="C_20260303183817A001"
                      data-course-type="单节课"
                      data-course-level="入门级"
@@ -2713,7 +2719,7 @@
                 </div>
 
                 <!-- 团课订单示例2：待支付 - 不满足取消条件：status=1(待支付)，未支付 -->
-                <div class="order-card" data-order-type="group" data-status="1" data-pay-type="">
+                <div class="order-card" data-order-type="group" data-status="1" data-pay-status="1" data-pay-type="">
                     <div class="order-header">
                         <div class="order-type-icon group">👥</div>
                         <div class="order-info">
@@ -2771,7 +2777,7 @@
                 </div>
 
                 <!-- 团课订单示例3：拼团失败 - 不满足取消条件：status=6(拼团失败) -->
-                <div class="order-card" data-order-type="group" data-status="6" data-pay-type="">
+                <div class="order-card" data-order-type="group" data-status="6" data-pay-status="3" data-pay-type="">
                     <div class="order-header">
                         <div class="order-type-icon group">👥</div>
                         <div class="order-info">
@@ -2829,7 +2835,7 @@
                 </div>
 
                 <!-- 团课订单示例4：后台下单 - 不满足取消条件：payType=5(后台下单)，最高优先级排除 -->
-                <div class="order-card" data-order-type="group" data-status="2" data-pay-type="5">
+                <div class="order-card" data-order-type="group" data-status="2" data-pay-status="2" data-pay-type="5">
                     <div class="order-header">
                         <div class="order-type-icon group">👥</div>
                         <div class="order-info">
@@ -2887,7 +2893,7 @@
                 </div>
 
                 <!-- 团课订单示例5：多节课程（4节课包） -->
-                <div class="order-card" data-order-type="group" data-status="2" data-pay-type="1"
+                <div class="order-card" data-order-type="group" data-status="2" data-pay-status="2" data-pay-type="1"
                      data-course-no="C_20260303183817A005"
                      data-course-type="多节课"
                      data-course-level="进阶"
@@ -3129,6 +3135,10 @@
                 <!-- 支付信息卡片 -->
                 <div class="detail-card">
                     <div class="detail-card-title">支付信息</div>
+                    <div class="detail-row">
+                        <span class="detail-label">支付状态</span>
+                        <span class="detail-value" id="detailPayStatus">-</span>
+                    </div>
                     <div class="detail-row">
                         <span class="detail-label">支付流水号</span>
                         <span class="detail-value order-no" id="detailPayTradeNo">-</span>
@@ -3887,6 +3897,14 @@
             '拼团失败': { class: 'failed', icon: '✕', desc: '拼团失败，订单已取消' }
         };
 
+        // 支付状态映射（1-待支付 2-已支付 3-已取消 4-已退款）
+        const payStatusMap = {
+            '1': { text: '待支付', class: 'unpaid' },
+            '2': { text: '已支付', class: 'completed' },
+            '3': { text: '已取消', class: 'cancelled' },
+            '4': { text: '已退款', class: 'refunded' }
+        };
+
         // 显示订单详情弹窗
         function showOrderDetailModal(btn) {
             const orderCard = btn.closest('.order-card');
@@ -3940,6 +3958,13 @@
             document.getElementById('detailPayType').textContent = payType;
             document.getElementById('detailAmount').textContent = amount;
             document.getElementById('detailFinalAmount').textContent = finalAmount;
+
+            // 设置支付状态
+            const payStatus = orderCard.dataset.payStatus || '1';
+            const payStatusInfo = payStatusMap[payStatus] || { text: '未知', class: '' };
+            const payStatusEl = document.getElementById('detailPayStatus');
+            payStatusEl.textContent = payStatusInfo.text;
+            payStatusEl.className = 'detail-value status-badge ' + payStatusInfo.class;
 
             // 设置服务信息标题
             document.getElementById('detailServiceTitle').textContent = serviceTitle;
